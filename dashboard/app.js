@@ -726,15 +726,17 @@
         "<div class='node stop'><strong>ВВП от золота не пересчитывается</strong><p class='small' id='goldGdp'></p></div></div>" +
       "</div>" +
       "<div class='card'><h2>Если золото будет другим</h2>" +
-      "<p class='small'>Остальной экспорт держится на последнем факте. Товарный экспорт сдвигается сам: это сумма. Темп ВВП сдвигается только если названо, сколько процентных пунктов даёт один миллион долларов.</p>" +
-      "<div class='grid two'>" +
-        "<div><label for='goldNow'>Экспорт золота, млн долларов</label>" +
-        "<input id='goldNow' type='text' inputmode='decimal' placeholder='пусто — факт 2025 года'></div>" +
-        "<div><label for='goldK'>П.п. темпа ВВП на 1 млн долларов золота</label>" +
-        "<input id='goldK' type='text' inputmode='decimal' placeholder='нет в данных'></div>" +
+      "<p class='small'>Введите уровень золота. Сумма товарного экспорта заполнится сама: это золото плюс последний факт остального экспорта. Темп ВВП из этого уровня не выводится. Для него нужно второе число — сколько процентных пунктов ВВП даёт один миллион долларов. Такого числа в рядах нет, поэтому оно само не подставляется.</p>" +
+      "<label for='goldNow'>Экспорт золота, млн долларов</label>" +
+      "<input id='goldNow' type='text' inputmode='decimal' placeholder='пусто — факт 2025 года'>" +
+      "<div class='grid two read-out'>" +
+        "<div class='node live'><strong>Товарный экспорт, уже посчитан</strong><p class='kpi' id='goldExportKpi'>—</p><p class='small' id='goldScenarioText'></p></div>" +
+        "<div class='node stop' id='goldGdpNode'><strong>Темп ВВП</strong><p class='kpi' id='goldGdpKpi'>не считается</p><p class='small' id='goldGdpText'></p></div>" +
       "</div>" +
-      "<p id='goldScenarioText'></p>" +
-      "<p class='small' id='goldGdpText'></p>" +
+      "<details class='fold' id='goldKBox'><summary>Коэффициент, если он уже известен отдельно</summary>" +
+      "<label for='goldK'>П.п. темпа ВВП на 1 млн долларов золота</label>" +
+      "<input id='goldK' type='text' inputmode='decimal' placeholder='само не заполняется'>" +
+      "<p class='small'>Это не темп ВВП. Это множитель. В 2025 году золото изменилось на −72,8%, а реальный ВВП вырос на +11,1%. Делить одно на другое нельзя: вместе с золотом двигались стройка, переводы и торговля.</p></details>" +
       "<button type='button' class='action' id='goldReset'>Вернуть факт</button></div>";
     ["goldNow", "goldK"].forEach(function (id) {
       var input = document.getElementById(id);
@@ -746,6 +748,7 @@
         saveState();
       });
     });
+    if (state.goldK) document.getElementById("goldKBox").open = true;
     document.getElementById("goldReset").addEventListener("click", function () {
       state.goldNow = "";
       state.goldK = "";
@@ -785,15 +788,24 @@
       "%, курс на конец года " + signed(o.usdKgsEnd2025ChangePct, 1) +
       "%. Коэффициента «миллион долларов золота → эти ряды» нет. Металлургия — около 62% обработки в докладе за один год, это не ряд экспорта.";
     var scenario = M.goldScenario(numOrNull(state.goldNow), numOrNull(state.goldK));
+    var gdpNode = document.getElementById("goldGdpNode");
+    document.getElementById("goldExportKpi").textContent = fmt(scenario.goodsMln == null ? to.goodsMln : scenario.goodsMln, 1);
     document.getElementById("goldScenarioText").textContent = scenario.goodsMln == null
-      ? "Товарный экспорт остаётся фактом 2025 года: " + fmt(to.goodsMln, 1) + " млн долларов. Остальной экспорт " + fmt(to.otherMln, 1) + " млн."
-      : "Товарный экспорт станет " + fmt(scenario.goodsMln, 1) + " млн: золото " + fmt(scenario.goldMln, 1) +
-        " плюс остальной экспорт " + fmt(scenario.otherMln, 1) + ". Доля золота " + fmt(scenario.goldSharePct, 1) +
-        "%. Сдвиг золота к факту 2025 года: " + signed(scenario.deltaGold, 1) + " млн.";
-    document.getElementById("goldGdpText").textContent = scenario.gdpShiftPp == null
-      ? "Сдвиг темпа ВВП не считается: коэффициент пуст. Пустое поле — не ноль."
-      : "При введённом коэффициенте сдвиг темпа ВВП " + signed(scenario.gdpShiftPp, 2) +
-        " п.п. Это не оценка Нацбанка и не продолжение темпа " + signed(o.gdpRealGrowthPct[2025], 1) + "%.";
+      ? "Факт 2025 года, млн долларов. Остальной экспорт " + fmt(to.otherMln, 1) + " млн."
+      : "Золото " + fmt(scenario.goldMln, 1) + " + остальной экспорт " + fmt(scenario.otherMln, 1) +
+        ". Доля золота " + fmt(scenario.goldSharePct, 1) + "%. Сдвиг к факту 2025 года: " + signed(scenario.deltaGold, 1) + " млн.";
+    if (scenario.gdpShiftPp == null) {
+      gdpNode.className = "node stop";
+      document.getElementById("goldGdpKpi").textContent = "не считается";
+      document.getElementById("goldGdpText").textContent = scenario.deltaGold == null
+        ? "Уровень золота ещё не изменён. Даже после изменения темп ВВП останется пустым, пока нет множителя."
+        : "Сдвиг золота " + signed(scenario.deltaGold, 1) + " млн уже вошёл в экспорт. Темп ВВП = множитель × этот сдвиг. Множителя нет, поэтому произведение пустое, а не ноль.";
+    } else {
+      gdpNode.className = "node wait";
+      document.getElementById("goldGdpKpi").textContent = signed(scenario.gdpShiftPp, 2);
+      document.getElementById("goldGdpText").textContent =
+        "П.п. к темпу 2025 года. Множитель введён вручную, это не оценка Нацбанка и не продолжение " + signed(o.gdpRealGrowthPct[2025], 1) + "%.";
+    }
   }
 
   function paintBuild() {
