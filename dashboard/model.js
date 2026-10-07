@@ -41,16 +41,16 @@
       { sector: "Здравоохранение", y2021: 2.6, y2025: 2.0 }
     ],
     technologies: [
-      { process: "Лекарственные средства", growthLabel: "×2", growthPct: null, chartPct: 100, driver: "low_base", note: "Эффект низкой базы, 0,1% промышленности" },
-      { process: "Пищевая промышленность", growthLabel: "+30,1%", growthPct: 30.1, chartPct: 30.1, driver: "other", note: "Крупнейший неметаллургический блок" },
-      { process: "Резина и пластмасса", growthLabel: "+35,7%", growthPct: 35.7, chartPct: 35.7, driver: "construction", note: "Производная строительного бума" },
-      { process: "Цемент", growthLabel: "+34,1%", growthPct: 34.1, chartPct: 34.1, driver: "construction", note: "Производная строительного бума" },
-      { process: "Изделия из бетона и гипса", growthLabel: "+40,7%", growthPct: 40.7, chartPct: 40.7, driver: "construction", note: "Производная строительного бума" },
-      { process: "Дерево, бумага, полиграфия", growthLabel: "+30,5%", growthPct: 30.5, chartPct: 30.5, driver: "construction", note: "Вспомогательный для стройки" },
-      { process: "Химическая продукция", growthLabel: "+17,7%", growthPct: 17.7, chartPct: 17.7, driver: "other", note: "Вспомогательный" },
-      { process: "Текстиль и одежда", growthLabel: "+7,1–8,5%", growthPct: null, chartPct: 7.8, growthMin: 7.1, growthMax: 8.5, driver: "other", note: "Стагнация" },
-      { process: "Нефтепродукты", growthLabel: "+5,8%", growthPct: 5.8, chartPct: 5.8, driver: "other", note: "Практическая стагнация" },
-      { process: "Добыча полезных ископаемых", growthLabel: "+10,6–15,5%", growthPct: null, chartPct: 13, growthMin: 10.6, growthMax: 15.5, driver: "gold", note: "В основном за счёт золота" }
+      { process: "Лекарственные средства", growthLabel: "+65,6%", growthPct: 65.6, chartPct: 65.6, driver: "low_base", note: "НСК, индекс физического объёма январь–декабрь 2025 к 2024: 165,6" },
+      { process: "Пищевая промышленность", growthLabel: "+30,1%", growthPct: 30.1, chartPct: 30.1, driver: "other", note: "НСК, январь–декабрь 2025" },
+      { process: "Резина и пластмасса", growthLabel: "+25,9%", growthPct: 25.9, chartPct: 25.9, driver: "construction", note: "НСК: резиновые и пластмассовые изделия +25,9%" },
+      { process: "Цемент", growthLabel: "+37,4%", growthPct: 37.4, chartPct: 37.4, driver: "construction", note: "НСК, январь–декабрь 2025" },
+      { process: "Изделия из бетона и гипса", growthLabel: "+42,4%", growthPct: 42.4, chartPct: 42.4, driver: "construction", note: "НСК: изделия из бетона, гипса и цемента +42,4%" },
+      { process: "Дерево, бумага, полиграфия", growthLabel: "+30,5%", growthPct: 30.5, chartPct: 30.5, driver: "construction", note: "НСК, январь–декабрь 2025" },
+      { process: "Химическая продукция", growthLabel: "+19,8%", growthPct: 19.8, chartPct: 19.8, driver: "other", note: "НСК, январь–декабрь 2025" },
+      { process: "Текстиль и одежда", growthLabel: "+9,6%", growthPct: 9.6, chartPct: 9.6, driver: "other", note: "НСК, январь–декабрь 2025" },
+      { process: "Нефтепродукты", growthLabel: "+3%", growthPct: 3, chartPct: 3, driver: "other", note: "НСК, индекс 103,0" },
+      { process: "Добыча полезных ископаемых", growthLabel: "+14,2%", growthPct: 14.2, chartPct: 14.2, driver: "gold", note: "НСК, январь–декабрь 2025" }
     ],
     pharma: {
       share2021: 5.3,
@@ -141,7 +141,7 @@
       id: "№7",
       rank: 3,
       name: "Стагнация текстиля и нефтепереработки",
-      desc: "Текстиль +7,1–8,5%, нефтепродукты +5,8%",
+      desc: "Текстиль +9,6%, нефтепродукты +3% в 2025 году",
       productivity: 4,
       resourceSaving: 4,
       stance: "reverse",

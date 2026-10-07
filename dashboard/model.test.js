@@ -81,10 +81,12 @@ test("legacy technology chart matches the previous dashboard bars", function () 
   var bars = m.legacyTechnologyBars();
   assert.equal(bars.length, 10);
   assert.equal(bars[0].process, "Лекарственные средства");
-  assert.equal(bars[0].growthPct, 100);
-  assert.equal(bars.find(function (b) { return b.process.indexOf("Текстиль") === 0; }).growthPct, 7.8);
-  assert.equal(bars.find(function (b) { return b.process.indexOf("Добыча") === 0; }).growthPct, 13);
-  assert.equal(bars.find(function (b) { return b.process.indexOf("Нефте") === 0; }).growthPct, 5.8);
+  assert.equal(bars[0].growthPct, 65.6);
+  assert.equal(bars.find(function (b) { return b.process.indexOf("Текстиль") === 0; }).growthPct, 9.6);
+  assert.equal(bars.find(function (b) { return b.process.indexOf("Цемент") === 0; }).growthPct, 37.4);
+  assert.equal(bars.find(function (b) { return b.process.indexOf("Резина") === 0; }).growthPct, 25.9);
+  assert.equal(bars.find(function (b) { return b.process.indexOf("Добыча") === 0; }).growthPct, 14.2);
+  assert.equal(bars.find(function (b) { return b.process.indexOf("Нефте") === 0; }).growthPct, 3);
 });
 
 test("construction technologies move as one factor", function () {
@@ -92,7 +94,7 @@ test("construction technologies move as one factor", function () {
   assert.equal(calm.length, 4);
   calm.forEach(function (row) {
     assert.equal(row.scenarioPct, 8);
-    assert.ok(row.factPct > 30);
+    assert.ok(row.factPct >= 25.9);
   });
   var half = m.coolGrowth(40.7, 50, 8);
   assert.ok(Math.abs(half - 24.35) < 1e-9);
