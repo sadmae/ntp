@@ -217,6 +217,22 @@ test("sector reading names the conclusion and the measure that follows from the 
   assert.equal(m.sectorReading({ channelSharePct: 40, lossPct: 50, redirectPct: 80, stockPct: 30 }).stage, "broken");
 });
 
+test("worked examples are arithmetic only and keep an empty coefficient from moving the result", function () {
+  var pharma = m.workedPharma();
+  assert.equal(pharma.input.k, 0.2);
+  assert.equal(pharma.share, 4);
+  assert.equal(pharma.shareWithoutK, null);
+  assert.equal(pharma.rawBefore, 94);
+  assert.equal(pharma.rawAfter, 84);
+  assert.ok(Math.abs(pharma.market.domesticMln - pharma.consumptionMln * 0.04) < 1e-6);
+  var apparel = m.workedApparel();
+  assert.equal(apparel.closed.response.outputIndex, 90);
+  assert.equal(apparel.closed.response.salesIndex, 85);
+  assert.equal(apparel.open.response.outputIndex, null);
+  assert.equal(apparel.open.response.ceilingIndex, 80);
+  assert.equal(apparel.open.stage, "split");
+});
+
 test("coefficient registry keeps the missing behavioral links explicit", function () {
   assert.ok(m.COEFFICIENTS.length >= 8);
   assert.equal(m.STEPS.length, 7);

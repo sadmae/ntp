@@ -680,6 +680,38 @@
     return value != null && value >= 0 && value <= 100;
   }
 
+  // Filled numbers for the teaching tab. The bases that come from the memo are named there.
+  // The lever move and the coefficient are illustrative and must not be read as NSC data.
+  var ILLUSTRATION = {
+    pharma: { baseShare: 2, processingBase: 6, processingNow: 16, k: 0.2 },
+    apparel: { channelSharePct: 40, lossPct: 50, redirectPct: 25, stockPct: 25 }
+  };
+
+  function workedPharma() {
+    var p = ILLUSTRATION.pharma;
+    var share = scenarioShare(p.baseShare, p.k, p.processingNow, p.processingBase);
+    var consumption = pharmaSnapshot(2023).consumptionMln;
+    return {
+      input: p,
+      share: share,
+      shareWithoutK: scenarioShare(p.baseShare, null, p.processingNow, p.processingBase),
+      rawBefore: unprocessedExportShare(p.processingBase),
+      rawAfter: unprocessedExportShare(p.processingNow),
+      consumptionMln: consumption,
+      market: marketFromShare(consumption, share),
+      baseMarket: marketFromShare(consumption, p.baseShare)
+    };
+  }
+
+  function workedApparel() {
+    var input = ILLUSTRATION.apparel;
+    return {
+      input: input,
+      closed: sectorReading(input),
+      open: sectorReading({ channelSharePct: input.channelSharePct, lossPct: input.lossPct })
+    };
+  }
+
   function constructionProportion(constructionGrowthPct) {
     var base = OBSERVED.constructionVolumeGrowth2025Pct;
     return OBSERVED.linkedToConstruction.map(function (row) {
@@ -840,6 +872,9 @@
     constructionProportion: constructionProportion,
     legacyTechnologyBars: legacyTechnologyBars,
     sectorResponse: sectorResponse,
-    sectorReading: sectorReading
+    sectorReading: sectorReading,
+    ILLUSTRATION: ILLUSTRATION,
+    workedPharma: workedPharma,
+    workedApparel: workedApparel
   };
 });

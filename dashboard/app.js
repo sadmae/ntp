@@ -98,6 +98,7 @@
   function render() {
     renderMarket();
     if (!painted) {
+      paintWorked();
       paintSector();
       paintPharma();
       paintMethod();
@@ -232,6 +233,97 @@
   function cardLoop(kind, title, kpi, text) {
     return "<div class='card'><span class='tag " + kind + "'>" + esc(title) + "</span><div class='kpi'>" +
       esc(kpi) + "</div><p class='small'>" + esc(text) + "</p></div>";
+  }
+
+  function paintWorked() {
+    var pharma = M.workedPharma();
+    var apparel = M.workedApparel();
+    var closed = apparel.closed.response;
+    var open = apparel.open.response;
+    var p = pharma.input;
+    var a = apparel.input;
+    document.getElementById("worked").innerHTML =
+      "<div class='card callout warn'><p><strong>Цифры на этой вкладке примерные и только для расчёта.</strong> Ими показана связь рычага и коэффициента. Это не данные Нацстаткома и не оценка по ряду. В прогноз их подставлять нельзя, пока на месте примера не окажется факт.</p></div>" +
+      "<div class='card'><p class='flow-label'>Лекарства: рычаг доходит до рынка только через коэффициент</p>" +
+      "<p class='small'>База из доклада: доля своих лекарств 2,0% в 2023 году, локальная переработка около 6% (середина диапазона 5–7%). Дальше подставлен пример: переработку подняли до " +
+      fmt(p.processingNow, 0) + "%, коэффициент k = " + fmt(p.k, 1) + " пункта доли на один пункт переработки.</p>" +
+      "<div class='chain'>" +
+        "<div class='node live'><strong>База</strong><p class='small'>Доля своих " + fmt(p.baseShare, 1) + "%. Переработка " + fmt(p.processingBase, 0) + "%.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node wait'><strong>Рычаг, пример</strong><p class='small'>Переработка " + fmt(p.processingBase, 0) + "% → " + fmt(p.processingNow, 0) + "%.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node wait'><strong>Коэффициент, пример</strong><p class='small'>k = " + fmt(p.k, 1) + ". Столько пунктов доли рынка даёт один пункт переработки.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node live'><strong>Результат расчёта</strong><p class='small'>Доля своих " + fmt(pharma.share, 1) + "%. " +
+        fmt(p.baseShare, 1) + " + " + fmt(p.k, 1) + " × (" + fmt(p.processingNow, 0) + " − " + fmt(p.processingBase, 0) + ").</p></div>" +
+      "</div>" +
+      "<p class='small'>При потреблении 2023 года, " + fmt(pharma.consumptionMln, 0) + " млн сомов по тождеству доклада, отечественные продажи в примере " +
+      fmt(pharma.baseMarket.domesticMln, 0) + " → " + fmt(pharma.market.domesticMln, 0) + " млн, импорт " +
+      fmt(pharma.baseMarket.importMln, 0) + " → " + fmt(pharma.market.importMln, 0) + " млн.</p>" +
+      "<div class='grid two read-out'>" +
+        "<div class='node live'><strong>Вывод</strong><p class='small'>Коэффициент переводит сдвиг рычага в другой показатель. Здесь десять пунктов переработки дают два пункта доли своих.</p></div>" +
+        "<div class='node live'><strong>Мера</strong><p class='small'>Пока k примерный, результат подписывать «учебный сценарий». В рабочий прогноз пускать после замены k числом из нового факта: (новая доля − 2) / (новая переработка − 6).</p></div>" +
+      "</div>" +
+      "<div class='down-arrow' aria-hidden='true'><span></span></div>" +
+      "<p class='flow-label'>Тот же рычаг, коэффициент пустой</p>" +
+      "<div class='chain'>" +
+        "<div class='node wait'><strong>Рычаг тот же</strong><p class='small'>Переработка " + fmt(p.processingNow, 0) + "%.</p></div>" +
+        "<div class='flow-arrow break' aria-hidden='true'><span></span></div>" +
+        "<div class='node stop'><strong>k пустой</strong><p class='small'>Доля своих не считается и остаётся " + fmt(p.baseShare, 1) + "%.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node live'><strong>Своя строка рычага всё же сдвигается</strong><p class='small'>Экспорт сырья без обработки " + fmt(pharma.rawBefore, 0) + "% → " + fmt(pharma.rawAfter, 0) + "%. Это тождество: 100 минус переработка.</p></div>" +
+      "</div>" +
+      "<div class='grid two read-out'>" +
+        "<div class='node live'><strong>Вывод</strong><p class='small'>Без коэффициента рычаг двигает только собственный баланс. До рынка готовых лекарств он не доходит.</p></div>" +
+        "<div class='node live'><strong>Мера</strong><p class='small'>Рост переработки сам по себе не объявлять ростом доли своих. Сначала снять k.</p></div>" +
+      "</div></div>" +
+      "<div class='card'><p class='flow-label'>Швейка: удар доходит до пошива только через раскладку</p>" +
+      "<p class='small'>Все четыре доли ниже примерные и только для расчёта. Доли выпуска через маркетплейсы в бюллетене Нацстаткома нет.</p>" +
+      "<div class='chain'>" +
+        "<div class='node wait'><strong>Канал, пример</strong><p class='small'>" + fmt(a.channelSharePct, 0) + "% выпуска шло через маркетплейсы.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node wait'><strong>Потеря, пример</strong><p class='small'>Потеряна " + fmt(a.lossPct, 0) + "% этого канала.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node live'><strong>Открытая часть</strong><p class='small'>" + fmt(closed.exposedPct, 1) + "% выпуска. " + fmt(a.channelSharePct, 0) + " × " + fmt(a.lossPct, 0) + " / 100.</p></div>" +
+      "</div>" +
+      "<div class='down-arrow' aria-hidden='true'><span></span></div>" +
+      "<div class='chain'>" +
+        "<div class='node wait'><strong>Другой покупатель, пример</strong><p class='small'>" + fmt(a.redirectPct, 0) + "% потери.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node wait'><strong>Запас, пример</strong><p class='small'>" + fmt(a.stockPct, 0) + "% потери.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node stop'><strong>Остановка пошива</strong><p class='small'>Остаток " + fmt(closed.passThrough * 100, 0) + "% потери.</p></div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='node live'><strong>Индексы</strong><p class='small'>Выпуск " + fmt(closed.outputIndex, 1) + ". Продажи " + fmt(closed.salesIndex, 1) + ". В запас " + fmt(closed.inventoryPct, 1) + "% базы.</p></div>" +
+      "</div>" +
+      "<div class='grid two read-out'>" +
+        "<div class='node live'><strong>Вывод</strong><p class='small'>" + esc(apparel.closed.conclusion) + "</p></div>" +
+        "<div class='node live'><strong>Мера</strong><p class='small'>" + esc(apparel.closed.measures[0]) + "</p></div>" +
+      "</div>" +
+      "<div class='down-arrow' aria-hidden='true'><span></span></div>" +
+      "<p class='flow-label'>Тот же удар, раскладка пустая</p>" +
+      "<div class='chain'>" +
+        "<div class='node live'><strong>Открыто те же " + fmt(open.exposedPct, 0) + "%</strong><p class='small'>Канал и потеря заданы, покупатель и запас пустые.</p></div>" +
+        "<div class='flow-arrow break' aria-hidden='true'><span></span></div>" +
+        "<div class='node stop'><strong>Индекс выпуска пуст</strong><p class='small'>Потолок, если пошив режется один к одному: " + fmt(open.ceilingIndex, 0) + ". Это не прогноз.</p></div>" +
+      "</div>" +
+      "<div class='grid two read-out'>" +
+        "<div class='node live'><strong>Вывод</strong><p class='small'>" + esc(apparel.open.conclusion) + "</p></div>" +
+        "<div class='node live'><strong>Мера</strong><p class='small'>" + esc(apparel.open.measures[0]) + " " + esc(apparel.open.measures[1]) + "</p></div>" +
+      "</div>" +
+      "<div class='down-arrow' aria-hidden='true'><span></span></div>" +
+      "<p class='flow-label'>Кредит — рычаг, пока без коэффициента</p>" +
+      "<div class='chain'>" +
+        "<div class='node wait'><strong>Рычаг</strong><p class='small'>Льготный кредит в сомах. Сумма на этой вкладке нарочно не подставлена: без коэффициента она ничего не меняет.</p></div>" +
+        "<div class='flow-arrow break' aria-hidden='true'><span></span></div>" +
+        "<div class='node stop'><strong>Коэффициент пуст</strong><p class='small'>Сколько пошива или запаса даёт один сом кредита, в рядах нет.</p></div>" +
+        "<div class='flow-arrow break' aria-hidden='true'><span></span></div>" +
+        "<div class='node stop'><strong>Индекс выпуска не меняется</strong><p class='small'>Сомы остаются на своей строке и в пошив не переходят.</p></div>" +
+      "</div>" +
+      "<div class='grid two read-out'>" +
+        "<div class='node live'><strong>Вывод</strong><p class='small'>Рычаг и коэффициент связаны умножением. Нет второго — произведение не считается, каким бы большим ни был первый.</p></div>" +
+        "<div class='node live'><strong>Мера</strong><p class='small'>Сначала назвать, что именно кредит держит: запас, ожидание покупателя или лишний пошив. Потом снять, сколько выпуска даёт один сом. До этого кредит в прогноз пошива не ставить.</p></div>" +
+      "</div></div>";
   }
 
   function paintSector() {
