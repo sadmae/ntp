@@ -41,16 +41,16 @@
       { sector: "Здравоохранение", y2021: 2.6, y2025: 2.0 }
     ],
     technologies: [
-      { process: "Лекарственные средства", growthLabel: "×2", growthPct: null, driver: "low_base", note: "Эффект низкой базы, 0,1% промышленности" },
-      { process: "Пищевая промышленность", growthLabel: "+30,1%", growthPct: 30.1, driver: "other", note: "Крупнейший неметаллургический блок" },
-      { process: "Резина и пластмасса", growthLabel: "+35,7%", growthPct: 35.7, driver: "construction", note: "Производная строительного бума" },
-      { process: "Цемент", growthLabel: "+34,1%", growthPct: 34.1, driver: "construction", note: "Производная строительного бума" },
-      { process: "Изделия из бетона и гипса", growthLabel: "+40,7%", growthPct: 40.7, driver: "construction", note: "Производная строительного бума" },
-      { process: "Дерево, бумага, полиграфия", growthLabel: "+30,5%", growthPct: 30.5, driver: "construction", note: "Вспомогательный для стройки" },
-      { process: "Химическая продукция", growthLabel: "+17,7%", growthPct: 17.7, driver: "other", note: "Вспомогательный" },
-      { process: "Текстиль и одежда", growthLabel: "+7,1–8,5%", growthPct: null, growthMin: 7.1, growthMax: 8.5, driver: "other", note: "Стагнация" },
-      { process: "Нефтепродукты", growthLabel: "+5,8%", growthPct: 5.8, driver: "other", note: "Практическая стагнация" },
-      { process: "Добыча полезных ископаемых", growthLabel: "+10,6–15,5%", growthPct: null, growthMin: 10.6, growthMax: 15.5, driver: "gold", note: "В основном за счёт золота" }
+      { process: "Лекарственные средства", growthLabel: "×2", growthPct: null, chartPct: 100, driver: "low_base", note: "Эффект низкой базы, 0,1% промышленности" },
+      { process: "Пищевая промышленность", growthLabel: "+30,1%", growthPct: 30.1, chartPct: 30.1, driver: "other", note: "Крупнейший неметаллургический блок" },
+      { process: "Резина и пластмасса", growthLabel: "+35,7%", growthPct: 35.7, chartPct: 35.7, driver: "construction", note: "Производная строительного бума" },
+      { process: "Цемент", growthLabel: "+34,1%", growthPct: 34.1, chartPct: 34.1, driver: "construction", note: "Производная строительного бума" },
+      { process: "Изделия из бетона и гипса", growthLabel: "+40,7%", growthPct: 40.7, chartPct: 40.7, driver: "construction", note: "Производная строительного бума" },
+      { process: "Дерево, бумага, полиграфия", growthLabel: "+30,5%", growthPct: 30.5, chartPct: 30.5, driver: "construction", note: "Вспомогательный для стройки" },
+      { process: "Химическая продукция", growthLabel: "+17,7%", growthPct: 17.7, chartPct: 17.7, driver: "other", note: "Вспомогательный" },
+      { process: "Текстиль и одежда", growthLabel: "+7,1–8,5%", growthPct: null, chartPct: 7.8, growthMin: 7.1, growthMax: 8.5, driver: "other", note: "Стагнация" },
+      { process: "Нефтепродукты", growthLabel: "+5,8%", growthPct: 5.8, chartPct: 5.8, driver: "other", note: "Практическая стагнация" },
+      { process: "Добыча полезных ископаемых", growthLabel: "+10,6–15,5%", growthPct: null, chartPct: 13, growthMin: 10.6, growthMax: 15.5, driver: "gold", note: "В основном за счёт золота" }
     ],
     pharma: {
       share2021: 5.3,
@@ -546,6 +546,17 @@
 
   // Keeps the 2025 ratio of each technology to construction volume.
   // One year is a proportion, not an estimated elasticity.
+  function legacyTechnologyBars() {
+    return FACTS.technologies.map(function (row) {
+      return {
+        process: row.process,
+        growthPct: row.chartPct,
+        note: row.note,
+        driver: row.driver
+      };
+    });
+  }
+
   function constructionProportion(constructionGrowthPct) {
     var base = OBSERVED.constructionVolumeGrowth2025Pct;
     return OBSERVED.linkedToConstruction.map(function (row) {
@@ -691,6 +702,7 @@
     sourceShare: sourceShare,
     sourceGrowth: sourceGrowth,
     activityShare: activityShare,
-    constructionProportion: constructionProportion
+    constructionProportion: constructionProportion,
+    legacyTechnologyBars: legacyTechnologyBars
   };
 });

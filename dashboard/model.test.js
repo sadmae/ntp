@@ -77,6 +77,16 @@ test("plan score does not enter the forecast functions", function () {
   gap.productivity = 5;
 });
 
+test("legacy technology chart matches the previous dashboard bars", function () {
+  var bars = m.legacyTechnologyBars();
+  assert.equal(bars.length, 10);
+  assert.equal(bars[0].process, "Лекарственные средства");
+  assert.equal(bars[0].growthPct, 100);
+  assert.equal(bars.find(function (b) { return b.process.indexOf("Текстиль") === 0; }).growthPct, 7.8);
+  assert.equal(bars.find(function (b) { return b.process.indexOf("Добыча") === 0; }).growthPct, 13);
+  assert.equal(bars.find(function (b) { return b.process.indexOf("Нефте") === 0; }).growthPct, 5.8);
+});
+
 test("construction technologies move as one factor", function () {
   var calm = m.constructionScenario(100, 8);
   assert.equal(calm.length, 4);

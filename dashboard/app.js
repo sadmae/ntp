@@ -165,6 +165,7 @@
           "%). Весь товарный экспорт " + signed(o.goodsExportGrowth2025Pct, 1) + "%. ВВП при этом " +
           signed(o.gdpRealGrowthPct[2025], 1) + "%. Внутренний бум и внешняя цена разошлись.") +
       "</div>" +
+      technologyChart() +
       "<div class='card'><h2>Доля в ВВП и выпуск — разные величины</h2>" +
       "<p class='small muted'>Добавленная стоимость в текущих ценах посчитана как доля × ВВП. Это следствие двух рядов НСК, не отдельная публикация отраслевого выпуска.</p>" +
       "<table><thead><tr><th>Сектор</th><th class='num'>Доля 2021</th><th class='num'>Доля 2025</th><th class='num'>ВДС 2021, млрд</th><th class='num'>ВДС 2025, млрд</th></tr></thead><tbody>" +
@@ -186,6 +187,23 @@
       "<p class='small muted'>Балл — сумма критериев доклада. Реакция взята из рядов НСК и НБКР там, где ряд есть.</p>" +
       "<table><thead><tr><th>ID</th><th>Разрыв</th><th class='num'>Балл</th><th>Что из этого следует для прогноза</th></tr></thead><tbody>" +
       gapRows + "</tbody></table></div>";
+  }
+
+  function technologyChart() {
+    var bars = M.legacyTechnologyBars();
+    var maxVal = Math.max.apply(null, bars.map(function (row) { return row.growthPct; })) * 1.08;
+    var rows = bars.map(function (row) {
+      var color = row.growthPct > 25 ? "#f4b942" : (row.growthPct < 10 ? "#ff5d6c" : "#3ecf8e");
+      var width = (row.growthPct / maxVal * 100).toFixed(1);
+      var label = String(row.growthPct) + "%";
+      return "<div class='bar-row'><div class='bar-label' title='" + esc(row.note) + "'>" + esc(row.process) + "</div>" +
+        "<div class='bar-track'><div class='bar-fill' style='width:" + width + "%;background:" + color +
+        ";color:#0f1420;font-size:11px;font-weight:700;line-height:16px;padding-left:6px;'>" + label + "</div></div></div>";
+    }).join("");
+    return "<div class='card'><h2>Рост технологических процессов, %</h2>" +
+      "<p class='small muted'>Тот же блок, что на прежнем дашборде. Он перенесён на эту вкладку, а не оставлен отдельной страницей. Жёлтым отмечен рост выше 25%, красным — ниже 10%.</p>" +
+      rows +
+      "<p class='small muted'>Лекарства здесь нарисованы как 100%, потому что доклад пишет темп ×2. НСК за 2025 год даёт рост физического объёма в 1,7 раза. Химия в том сообщении +19,8%, добыча +14,2%. Цемент, бетон, резина и дерево на графике выглядят отдельными процессами, а двигаются вместе со стройкой.</p></div>";
   }
 
   function cardLoop(kind, title, kpi, text) {
