@@ -83,6 +83,13 @@
       if (history.replaceState) history.replaceState(null, "", "#" + button.getAttribute("data-tab"));
     });
   });
+  document.querySelectorAll("[data-goto]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var target = document.querySelector(".tab[data-tab='" + button.getAttribute("data-goto") + "']");
+      if (target) target.click();
+      window.scrollTo(0, 0);
+    });
+  });
   var initialTab = document.querySelector(".tab[data-tab='" + location.hash.slice(1) + "']");
   if (initialTab) initialTab.click();
 

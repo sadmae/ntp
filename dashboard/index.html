@@ -3,23 +3,171 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Замкнутый контур КП НТП</title>
+<title>Как читать модель экономики Кыргызстана</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header>
-  <p class="eyebrow">КП НТП / СТОНХ · Кыргызская Республика</p>
-  <h1>Замкнутый контур: от плана технологий к прогнозу</h1>
-  <p class="lead">Инвентаризация четырёх уровней остаётся. Прогноз собирается из того, что уже сделали рынок, бюджет и внешняя цена. Балл «производительность × экономия ресурсов» эту реакцию не заменяет.</p>
+  <p class="eyebrow">Кыргызская Республика</p>
+  <h1>Как читать модель</h1>
+  <p class="lead">Стрелка значит: из этого числа получается следующее. Сначала план — что важно. Потом факт — что уже произошло. Прогноз появляется в конце стрелки, из факта или из названного рычага.</p>
   <nav>
-    <button type="button" class="tab active" data-tab="market">Реакция 2021–2025</button>
+    <button type="button" class="tab active" data-tab="guide">Как читать</button>
+    <button type="button" class="tab" data-tab="market">Реакция 2021–2025</button>
     <button type="button" class="tab" data-tab="sector">Отрасль</button>
     <button type="button" class="tab" data-tab="pharma">Лекарства</button>
     <button type="button" class="tab" data-tab="method">Что делать</button>
   </nav>
 </header>
 <main>
-  <section id="market" class="view"></section>
+  <section id="guide" class="view">
+    <div class="card">
+      <p class="flow-label">Как устроены рамки</p>
+      <div class="chain legend">
+        <div class="node live"><strong>Зелёная рамка</strong><p class="small">Число уже есть. Из него можно сделать вывод и выбрать меру.</p></div>
+        <div class="node wait"><strong>Пунктир</strong><p class="small">Числа ещё нет. Прогноз на этой стрелке останавливается.</p></div>
+        <div class="node stop"><strong>Красная рамка</strong><p class="small">Стрелка обрывается. Дальше этим числом пользоваться нельзя.</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="flow-label">1. План: что важно</p>
+      <p class="small">КП НТП — комплексная программа научно-технического прогресса. Её схема называется СТОНХ и читается слева направо: от науки к ресурсам. Это карта приоритетов, составленная для плановой постановки задачи.</p>
+      <div class="chain">
+        <div class="node live"><strong>Наука</strong><p class="small">Исследования и разработки.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Отрасли</strong><p class="small">Куда эти знания относятся.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Технологии</strong><p class="small">Укрупнённые процессы: цемент, одежда, лекарства.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Ресурсы</strong><p class="small">Сырьё, энергия, люди, капитал.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Балл</strong><p class="small">Производительность труда плюс экономия сырья и энергии.</p></div>
+      </div>
+      <div class="down-arrow" aria-hidden="true"><span></span></div>
+      <div class="chain">
+        <div class="node live"><strong>Высокий балл</strong><p class="small">Тема важна для плана страны.</p></div>
+        <div class="flow-arrow break" aria-hidden="true"><span></span></div>
+        <div class="node stop"><strong>Прогноз выпуска</strong><p class="small">Сюда балл не переносится. Вопрос «что вырастет» начинается со следующей главы.</p></div>
+      </div>
+      <div class="grid two read-out">
+        <div class="node live"><strong>Вывод</strong><p class="small">Балл отвечает на вопрос «что важно запланировать».</p></div>
+        <div class="node live"><strong>Мера</strong><p class="small">Держать балл списком приоритетов. Для прогноза открыть следующую стрелку — факт.</p></div>
+      </div>
+    </div>
+
+    <div class="down-arrow" aria-hidden="true"><span></span></div>
+
+    <div class="card">
+      <p class="flow-label">2. Факт: что уже произошло</p>
+      <p class="small">Числа берутся у Нацстаткома (stat.gov.kg) и Национального банка (nbkr.kg). Суммы, которые страница считает сама, подписаны словом «следствие».</p>
+
+      <p class="flow-label">Петля спроса</p>
+      <div class="chain">
+        <div class="node live"><strong>Доход семей</strong><p class="small">Переводы из-за рубежа 3&nbsp;117 млн долларов, +22,6% в 2025 году. Реальная зарплата +9,9%.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Стройка и торговля</strong><p class="small">Объём строительства +21,1%. Оборот торговли +17,8%.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Связанные технологии</strong><p class="small">Стройматериалы +35,7%. Дерево и бумага +30,5%. Цемент, бетон и резина едут вместе со стройкой.</p></div>
+      </div>
+      <div class="grid two read-out">
+        <div class="node live"><strong>Вывод</strong><p class="small">Это один строительный цикл. Отдельный темп цемента — не отдельное научное достижение.</p></div>
+        <div class="node live"><strong>Мера</strong><p class="small">Прогнозировать эти технологии одним фактором. Смотреть их вместе на вкладке «Реакция 2021–2025».</p></div>
+      </div>
+
+      <p class="flow-label">Петля бюджета и кредита</p>
+      <div class="chain">
+        <div class="node live"><strong>Решение о деньгах</strong><p class="small">Республиканский бюджет в инвестициях за 2025 год вырос примерно на 62%.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Куда сел кредит</strong><p class="small">Портфель на конец 2025 года — 574,5 млрд сомов. Около 37% — людям, 23% — торговле, 10% — ипотеке, 10,5% — сельскому хозяйству.</p></div>
+      </div>
+      <div class="grid two read-out">
+        <div class="node live"><strong>Вывод</strong><p class="small">Часть бума задана финансированием. Кредит идёт за потреблением и торговлей.</p></div>
+        <div class="node live"><strong>Мера</strong><p class="small">Называть это рычагом денег. В подпись «технологический сдвиг» эта стрелка не выходит.</p></div>
+      </div>
+
+      <p class="flow-label">Петля золота</p>
+      <div class="chain">
+        <div class="node live"><strong>Экспорт золота</strong><p class="small">2&nbsp;506 млн долларов в 2024 году → 683 млн в 2025-м, −72,8%.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Весь товарный экспорт</strong><p class="small">−44,7%.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>ВВП</strong><p class="small">Реальный рост +11,1%. Внутренний бум и внешняя цена разошлись.</p></div>
+      </div>
+      <div class="grid two read-out">
+        <div class="node live"><strong>Вывод</strong><p class="small">Одна цифра роста ВВП не описывает, что случилось с обработкой и экспортом.</p></div>
+        <div class="node live"><strong>Мера</strong><p class="small">Прогноз промышленности собирать из выпуска отрасли и из золотого контура, а не из заголовка по ВВП.</p></div>
+      </div>
+    </div>
+
+    <div class="down-arrow" aria-hidden="true"><span></span></div>
+
+    <div class="card">
+      <p class="flow-label">3. Доля в экономике — не объём выпуска</p>
+      <div class="grid two">
+        <div class="chain">
+          <div class="node stop"><strong>Доля сельского хозяйства</strong><p class="small">12,4% ВВП в 2021 году → 8,0% в 2025-м.</p></div>
+          <div class="flow-arrow break" aria-hidden="true"><span></span></div>
+          <div class="node stop"><strong>Спад производства</strong><p class="small">Из падения доли этот вывод не следует.</p></div>
+        </div>
+        <div class="chain">
+          <div class="node live"><strong>Физический объём</strong><p class="small">С 2021 по 2025 год примерно +17%.</p></div>
+          <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+          <div class="node live"><strong>Выпуск вырос</strong><p class="small">Сжался вес сектора в общем итоге, не сам урожай и не весь выпуск.</p></div>
+        </div>
+      </div>
+      <div class="grid two read-out">
+        <div class="node live"><strong>Вывод</strong><p class="small">Доля отвечает, какую часть пирога занимает сектор. Выпуск отвечает, сколько произвели.</p></div>
+        <div class="node live"><strong>Мера</strong><p class="small">Решение принимать по выпуску, занятости и производительности. Долю баллом не исправлять.</p></div>
+      </div>
+    </div>
+
+    <div class="down-arrow" aria-hidden="true"><span></span></div>
+
+    <div class="card">
+      <p class="flow-label">4. Когда появляется прогноз</p>
+      <div class="chain">
+        <div class="node live"><strong>Последний факт</strong><p class="small">То, что Нацстатком или Нацбанк уже опубликовали.</p></div>
+        <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+        <div class="node live"><strong>Тождество</strong><p class="small">Части обязаны сойтись в сумму: выпуск = продажи + запас. Сырьё = переработка + экспорт без обработки.</p></div>
+      </div>
+      <div class="down-arrow" aria-hidden="true"><span></span></div>
+      <div class="grid two">
+        <div class="chain">
+          <div class="node live"><strong>Инерция</strong><p class="small">Оставить последний факт, пока нет нового наблюдения. Прошлогодний темп вперёд сам не копируется.</p></div>
+          <div class="flow-arrow on" aria-hidden="true"><span></span></div>
+          <div class="node live"><strong>Базовый ответ</strong><p class="small">«Пока ничего нового не названо, держим последний уровень».</p></div>
+        </div>
+        <div class="chain">
+          <div class="node wait"><strong>Сценарий</strong><p class="small">Рычаг и коэффициент. Рычаг — закупка, кредит, другой покупатель, тариф. Коэффициент — на сколько выпуск сдвигается от одной единицы рычага.</p></div>
+          <div class="flow-arrow break" aria-hidden="true"><span></span></div>
+          <div class="node stop"><strong>Пустой коэффициент</strong><p class="small">Стрелка обрывается. На место пустого числа балл плана не ставится.</p></div>
+        </div>
+      </div>
+      <div class="grid two read-out">
+        <div class="node live"><strong>Вывод</strong><p class="small">У модели два рабочих ответа: повторить факт или посчитать названный рычаг. Ответ «подставить важность вместо числа» она не даёт.</p></div>
+        <div class="node live"><strong>Мера</strong><p class="small">При пустом поле идти за недостающим рядом и до него жить на инерции. Когда факт придёт, записать ошибку: факт минус инерция и факт минус сценарий. Коэффициент, который разошёлся с фактом, заменить коэффициентом из факта.</p></div>
+      </div>
+    </div>
+
+    <div class="down-arrow" aria-hidden="true"><span></span></div>
+
+    <div class="card">
+      <p class="flow-label">5. Куда нажать</p>
+      <p class="small">Дальше те же стрелки уже на числах. На «Отрасли» и «Лекарствах» пустые поля — это оборванная стрелка: индекс не двигается, пока коэффициент не назван.</p>
+      <div class="actions">
+        <button type="button" class="action" data-goto="market">Три петли на числах</button>
+        <button type="button" class="action" data-goto="sector">Удар по одной отрасли</button>
+        <button type="button" class="action" data-goto="pharma">Лекарства: где контур разомкнут</button>
+        <button type="button" class="action" data-goto="method">Список пустых коэффициентов</button>
+      </div>
+      <div class="grid two read-out">
+        <div class="node live"><strong>Пример отрасли</strong><p class="small">Повреждение складов маркетплейса бьёт по каналу заказов швейных цехов. Выпуск сокращается после раскладки потери на другого покупателя, запас и остановку цеха. Доли площадки в бюллетене Нацстаткома нет, поэтому поля открываются пустыми.</p></div>
+        <div class="node live"><strong>Пример лекарств</strong><p class="small">Переработка сырья и доля своих лекарств на рынке — разные стрелки. Ползунок переработки двигает только баланс сырья, пока не задан коэффициент связи с рынком.</p></div>
+      </div>
+    </div>
+  </section>
+  <section id="market" class="view hidden"></section>
   <section id="sector" class="view hidden"></section>
   <section id="pharma" class="view hidden"></section>
   <section id="method" class="view hidden"></section>

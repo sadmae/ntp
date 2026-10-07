@@ -141,8 +141,37 @@ ol.steps li { margin: 0 0 10px; }
 }
 .flow-arrow.on span { background: var(--accent); }
 .flow-arrow.on span:after { border-left-color: var(--accent); }
+.flow-arrow.break span { background: var(--crit); }
+.flow-arrow.break span:after { border-left-color: var(--crit); }
+.chain {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.chain > .node { flex: 1 1 0; margin: 0; }
+.chain > .flow-arrow { flex: 0 0 28px; }
+.chain.legend > .node { flex: 1 1 180px; }
+.read-out { margin-top: 12px; }
+.down-arrow { height: 28px; display: flex; justify-content: center; margin: 4px 0; }
+.down-arrow span {
+  width: 2px;
+  height: 100%;
+  background: var(--accent);
+  position: relative;
+}
+.down-arrow span:after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  bottom: -1px;
+  border: 5px solid transparent;
+  border-top: 7px solid var(--accent);
+}
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
 @media (max-width: 980px) {
-  .flow { grid-template-columns: 1fr; }
+  .flow, .chain { grid-template-columns: 1fr; }
+  .chain { flex-direction: column; }
+  .chain > .flow-arrow { flex-basis: 28px; height: 28px; }
   .flow-arrow { height: 28px; }
   .flow-arrow span { width: 2px; height: 100%; margin: 0 auto; }
   .flow-arrow span:after {
@@ -154,6 +183,7 @@ ol.steps li { margin: 0 0 10px; }
     border-top: 7px solid var(--border);
   }
   .flow-arrow.on span:after { border-top-color: var(--accent); border-left-color: transparent; }
+  .flow-arrow.break span:after { border-top-color: var(--crit); border-left-color: transparent; }
 }
 @media (max-width: 720px) {
   h1 { font-size: 22px; }
