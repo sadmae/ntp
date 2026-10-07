@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Замкнутый контур КП НТП</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <p class="eyebrow">КП НТП / СТОНХ · Кыргызская Республика</p>
+  <h1>Замкнутый контур: от плана технологий к прогнозу</h1>
+  <p class="lead">Инвентаризация четырёх уровней остаётся. Прогноз собирается из того, что уже сделали рынок, бюджет и внешняя цена. Балл «производительность × экономия ресурсов» эту реакцию не заменяет.</p>
+  <nav>
+    <button type="button" class="tab active" data-tab="market">Реакция 2021–2025</button>
+    <button type="button" class="tab" data-tab="pharma">Лекарства</button>
+    <button type="button" class="tab" data-tab="method">Что делать</button>
+  </nav>
+</header>
+<main>
+  <section id="market" class="view"></section>
+  <section id="pharma" class="view hidden"></section>
+  <section id="method" class="view hidden"></section>
+</main>
+<footer>
+  <p>Ряды: НСК КР, stat.gov.kg (имя stat.kg не открывается) и Национальный банк, nbkr.kg. Доли рынка лекарств и доля сырья без переработки — из аналитического доклада, отдельного ряда НСК по ним в этом наборе нет. Производные величины считаются на странице и помечены как следствие.</p>
+</footer>
+<script src="model.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
