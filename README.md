@@ -4,4 +4,4 @@
 
 Методика СТОНХ хорошо инвентаризирует технологии и слабо прогнозирует: в ней нет обратной реакции рынка. Как замкнуть контур на рядах НСК и Нацбанка, написано в [docs/zamknutyy-kontur.md](docs/zamknutyy-kontur.md).
 
-Экран с тремя петлями (спрос, бюджет, золото), кейсом лекарств и журналом ошибки: [dashboard/index.html](dashboard/index.html). Расчёты живут в `dashboard/model.js`, проверка — `node --test dashboard/model.test.js`.
+Экран с тремя петлями (спрос, бюджет, золото), листом отраслевого удара, кейсом лекарств и журналом ошибки: [dashboard/index.html](dashboard/index.html). Расчёты живут в `dashboard/model.js`, проверка — `node --test dashboard/model.test.js`.

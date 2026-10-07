@@ -162,6 +162,61 @@ test("gold and remittances are opposite loops in 2025", function () {
   assert.equal(stopped[0].scenarioPct, 0);
 });
 
+test("apparel shock does not move output until the channel and the response are both named", function () {
+  var a = m.OBSERVED.apparel;
+  assert.equal(a.volumeGrowth2025Pct, 15.6);
+  assert.equal(a.groupValue2025MlnSom, 25120);
+  assert.equal(a.textileClothingExportValueIndex, 75.8);
+  assert.equal(a.russiaClothingAccessoriesMlnUsd, 74.9);
+  assert.equal(m.sectorResponse({}).outputIndex, null);
+  assert.equal(m.sectorResponse({ channelSharePct: 40 }).outputIndex, null);
+  var open = m.sectorResponse({ channelSharePct: 40, lossPct: 50 });
+  assert.equal(open.exposedPct, 20);
+  assert.equal(open.outputIndex, null);
+  assert.equal(open.ceilingIndex, 80);
+  var closed = m.sectorResponse({ channelSharePct: 40, lossPct: 50, redirectPct: 25, stockPct: 25 });
+  assert.equal(closed.passThrough, 0.5);
+  assert.equal(closed.outputIndex, 90);
+  assert.equal(closed.salesIndex, 85);
+  assert.equal(closed.inventoryPct, 5);
+  assert.equal(closed.consistent, true);
+  var held = m.sectorResponse({ channelSharePct: 40, lossPct: 100, redirectPct: 0, stockPct: 100 });
+  assert.equal(held.outputIndex, 100);
+  assert.equal(held.salesIndex, 60);
+  var none = m.sectorResponse({ channelSharePct: 0, lossPct: 100 });
+  assert.equal(none.outputIndex, 100);
+  var broken = m.sectorResponse({ channelSharePct: 40, lossPct: 50, redirectPct: 80, stockPct: 30 });
+  assert.equal(broken.consistent, false);
+  assert.equal(broken.outputIndex, null);
+  var gap = m.GAPS.find(function (g) { return g.id === "№7"; });
+  var before = gap.productivity;
+  var first = m.sectorResponse({ channelSharePct: 40, lossPct: 50, redirectPct: 0, stockPct: 0 }).outputIndex;
+  gap.productivity = 1;
+  assert.equal(m.sectorResponse({ channelSharePct: 40, lossPct: 50, redirectPct: 0, stockPct: 0 }).outputIndex, first);
+  gap.productivity = before;
+  assert.equal(first, 80);
+});
+
+test("sector reading names the conclusion and the measure that follows from the open arrow", function () {
+  var empty = m.sectorReading({});
+  assert.equal(empty.stage, "channel");
+  assert.equal(empty.measures.length, 2);
+  var split = m.sectorReading({ channelSharePct: 40, lossPct: 50 });
+  assert.equal(split.stage, "split");
+  assert.ok(split.conclusion.indexOf("20") >= 0);
+  assert.ok(split.measures[1].indexOf("80") >= 0);
+  var closed = m.sectorReading({ channelSharePct: 40, lossPct: 50, redirectPct: 25, stockPct: 25 });
+  assert.equal(closed.stage, "closed");
+  assert.ok(closed.conclusion.indexOf("90") >= 0);
+  assert.ok(closed.measures[0].indexOf("остановка пошива") >= 0);
+  var stocked = m.sectorReading({ channelSharePct: 40, lossPct: 100, redirectPct: 0, stockPct: 100 });
+  assert.ok(stocked.measures[0].indexOf("запас") >= 0);
+  var replaced = m.sectorReading({ channelSharePct: 40, lossPct: 100, redirectPct: 100, stockPct: 0 });
+  assert.ok(replaced.measures[0].indexOf("замещ") >= 0);
+  assert.equal(m.sectorReading({ channelSharePct: 0, lossPct: 80 }).stage, "none");
+  assert.equal(m.sectorReading({ channelSharePct: 40, lossPct: 50, redirectPct: 80, stockPct: 30 }).stage, "broken");
+});
+
 test("coefficient registry keeps the missing behavioral links explicit", function () {
   assert.ok(m.COEFFICIENTS.length >= 8);
   assert.equal(m.STEPS.length, 7);

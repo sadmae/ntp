@@ -145,7 +145,7 @@
       productivity: 4,
       resourceSaving: 4,
       stance: "reverse",
-      evidence: "Индекс объёма текстиля в 2022–2024 годах рос (107, 119, 115). В 2025 году НБКР фиксирует спад экспорта готовых текстильных изделий из-за логистики. Нефтепродукты: индекс объёма 186,9 в 2024 году, затем медленный темп. Загрузки мощностей по-прежнему нет."
+      evidence: "Группа текстиль, одежда, обувь и кожа в 2025 году: +9,6% физического объёма и 25 120 млн сомов. Одежда внутри группы +15,6%, при этом нижнее бельё дало индекс 65,2. Экспорт «одежда текстильная» за январь–ноябрь 2025 года — 50,9 млн долларов, индекс стоимости 75,8. Выпуск и экспорт уже разошлись. Доли маркетплейсов в бюллетене нет."
     },
     {
       id: "№3",
@@ -463,7 +463,26 @@
     linkedToConstruction: [
       { process: "Резина, пластмасса и стройматериалы", growth2025: 35.7, detail: "Одна строка НСК за 2025 год. В докладе цемент, бетон и резина разведены внутри этого пучка." },
       { process: "Дерево, бумага, полиграфия", growth2025: 30.5, detail: "НСК, итоги 2025 года." }
-    ]
+    ],
+    // NSC socio-economic bulletin, January–December 2025.
+    // Trade rows are January–November. They are not shares of physical output.
+    apparel: {
+      volumeGrowth2025Pct: 15.6,
+      groupValue2025MlnSom: 25120,
+      groupVolumeGrowth2025Pct: 9.6,
+      groupShareOfManufacturingPct: 3.9,
+      mensOuterwearThsPcs: 5772.8,
+      mensOuterwearIndex: 111.5,
+      womensOuterwearThsPcs: 21000.7,
+      womensOuterwearIndex: 119.3,
+      underwearThsPcs: 25810.8,
+      underwearIndex: 65.2,
+      textileClothingExportThsUsd: 50854.9,
+      textileClothingExportValueIndex: 75.8,
+      russiaClothingAccessoriesMlnUsd: 74.9,
+      clothingImportThsUsd: 115100.2,
+      clothingImportValueIndex: 70.6
+    }
   };
 
   var ACTIVITY_LABELS = {
@@ -557,6 +576,110 @@
     });
   }
 
+  // Sector response. Last observed physical output is the index 100.
+  // A shock hits one sales channel. Lost sales are split into another buyer,
+  // inventories, and a cut in output. Missing shares do not become a forecast.
+  function sectorResponse(input) {
+    var channel = numberOrNull(input && input.channelSharePct);
+    var loss = numberOrNull(input && input.lossPct);
+    var redirect = numberOrNull(input && input.redirectPct);
+    var stock = numberOrNull(input && input.stockPct);
+    var result = {
+      exposedPct: null,
+      passThrough: null,
+      outputIndex: null,
+      salesIndex: null,
+      inventoryPct: null,
+      ceilingIndex: null,
+      consistent: null
+    };
+    if (!inUnitInterval(channel) || !inUnitInterval(loss)) return result;
+    var exposed = channel * loss / 100;
+    result.exposedPct = exposed;
+    result.ceilingIndex = 100 - exposed;
+    if (exposed === 0) {
+      result.outputIndex = 100;
+      result.salesIndex = 100;
+      result.inventoryPct = 0;
+      result.consistent = true;
+      return result;
+    }
+    if (!inUnitInterval(redirect) || !inUnitInterval(stock)) return result;
+    if (redirect + stock > 100) {
+      result.consistent = false;
+      return result;
+    }
+    var pass = (100 - redirect - stock) / 100;
+    result.consistent = true;
+    result.passThrough = pass;
+    result.outputIndex = 100 - exposed * pass;
+    result.salesIndex = 100 - exposed * (1 - redirect / 100);
+    result.inventoryPct = exposed * stock / 100;
+    return result;
+  }
+
+  // Turns a sector response into a conclusion and the measure that follows from it.
+  // The plan score is not an input.
+  function sectorReading(input) {
+    var response = sectorResponse(input || {});
+    var channel = numberOrNull(input && input.channelSharePct);
+    var loss = numberOrNull(input && input.lossPct);
+    var redirect = numberOrNull(input && input.redirectPct);
+    var stock = numberOrNull(input && input.stockPct);
+    var reading = { response: response, stage: "channel", conclusion: "", measures: [] };
+    if (!inUnitInterval(channel) || !inUnitInterval(loss)) {
+      reading.conclusion = "Вывод о выпуске не следует: не названы доля канала и доля потерь.";
+      reading.measures = [
+        "Снять долю выпуска 2025 года, прошедшую через российские маркетплейсы. 74,9 млн долларов одежды в Россию описывают страну, не площадку.",
+        "Отдельно посчитать уничтоженный на складах товар и отменённые заказы цехам. Это доля потерь канала."
+      ];
+      return reading;
+    }
+    if (response.exposedPct === 0) {
+      reading.stage = "none";
+      reading.conclusion = "Открытая часть выпуска равна нулю. Индекс выпуска остаётся 100, на уровне физического объёма 2025 года.";
+      reading.measures = ["Мера по пошиву из этого удара не следует."];
+      return reading;
+    }
+    if (response.consistent === false) {
+      reading.stage = "broken";
+      reading.conclusion = "Сценарий не сходится: другой покупатель и запас вместе больше потерянных продаж.";
+      reading.measures = ["Сложить эти две доли так, чтобы вместе они не превышали 100% потерянного канала."];
+      return reading;
+    }
+    if (response.outputIndex == null) {
+      reading.stage = "split";
+      reading.conclusion = "Под ударом " + round(response.exposedPct, 1) + "% выпуска. Куда денется эта часть, не разложено, поэтому индекс пошива не считается.";
+      reading.measures = [
+        "Индекс пошива считается после раскладки потерь на другого покупателя, запас и остановку цеха.",
+        "Верхняя граница, если пошив режется один к одному с потерей заказов: индекс " + round(response.ceilingIndex, 1) + ". Это потолок, не прогноз."
+      ];
+      return reading;
+    }
+    var passPct = response.passThrough * 100;
+    reading.stage = "closed";
+    reading.conclusion = "Индекс выпуска " + round(response.outputIndex, 1) + ", индекс продаж " + round(response.salesIndex, 1) + ". В запас уходит " + round(response.inventoryPct, 1) + "% базового выпуска.";
+    if (passPct >= redirect && passPct >= stock && passPct > 0) {
+      reading.measures = ["Главный выход потери — остановка пошива. Выпуск держит названный другой покупатель на этот объём. Кредит на прежний объём без покупателя в этой раскладке растит запас или убыток."];
+    } else if (stock >= redirect && stock > passPct) {
+      reading.measures = ["Пошив в основном продолжается в запас, продажи падают. Кредит и склад здесь финансируют запас. Срок такой меры мерить скоростью, с которой запас находит покупателя. Этого коэффициента в рядах нет."];
+    } else if (redirect > 0 && redirect >= stock && redirect >= passPct) {
+      reading.measures = ["Потерянный канал в основном замещён. Мера — закрепить этого покупателя объёмом поставки. Пошив сверх замещённого объёма эта раскладка не обосновывает."];
+    } else {
+      reading.measures = ["Потеря разложена. Меру выбирать по самой большой доле: покупатель держит выпуск, запас держит пошив без продаж, остановка цеха сокращает и то и другое."];
+    }
+    reading.measures.push("Балл плана по текстилю в индекс выпуска не входит.");
+    return reading;
+  }
+
+  function numberOrNull(value) {
+    return typeof value === "number" && isFinite(value) ? value : null;
+  }
+
+  function inUnitInterval(value) {
+    return value != null && value >= 0 && value <= 100;
+  }
+
   function constructionProportion(constructionGrowthPct) {
     var base = OBSERVED.constructionVolumeGrowth2025Pct;
     return OBSERVED.linkedToConstruction.map(function (row) {
@@ -587,6 +710,18 @@
       name: "Загрузка мощностей текстиля и нефтепереработки",
       status: "missing",
       closes: "Проверка тезиса о росте почти без капвложений (№7)"
+    },
+    {
+      id: "apparel_channel",
+      name: "Доля выпуска одежды через российские маркетплейсы",
+      status: "missing",
+      closes: "Удар по складам бьёт по каналу. В бюллетене есть экспорт в Россию, но не доля маркетплейса"
+    },
+    {
+      id: "apparel_passthrough",
+      name: "Доля потерянных заказов одежды, которая сокращает пошив",
+      status: "missing",
+      closes: "Остаток потерянных продаж может уйти другому покупателю или в запас. Без раскладки индекс выпуска не считается"
     },
     {
       id: "profit",
@@ -703,6 +838,8 @@
     sourceGrowth: sourceGrowth,
     activityShare: activityShare,
     constructionProportion: constructionProportion,
-    legacyTechnologyBars: legacyTechnologyBars
+    legacyTechnologyBars: legacyTechnologyBars,
+    sectorResponse: sectorResponse,
+    sectorReading: sectorReading
   };
 });

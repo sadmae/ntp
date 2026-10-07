@@ -13,13 +13,27 @@
       resource: 5,
       factShare: "",
       factImport: "",
-      construction: 21.1
+      construction: 21.1,
+      apparelChannel: "",
+      apparelLoss: "",
+      apparelRedirect: "",
+      apparelStock: ""
     };
     try {
       var saved = JSON.parse(localStorage.getItem("ktp_ntp_closed_loop") || "null");
-      if (!saved) return blank;
+      if (!saved) saved = blank;
       Object.keys(blank).forEach(function (key) {
         if (saved[key] == null) saved[key] = blank[key];
+      });
+      var query = new URLSearchParams(location.search);
+      var fromQuery = {
+        apparelChannel: query.get("channel"),
+        apparelLoss: query.get("loss"),
+        apparelRedirect: query.get("redirect"),
+        apparelStock: query.get("stock")
+      };
+      Object.keys(fromQuery).forEach(function (key) {
+        if (fromQuery[key] != null && fromQuery[key] !== "") saved[key] = fromQuery[key];
       });
       return saved;
     } catch (e) {
@@ -66,18 +80,23 @@
       document.querySelectorAll(".view").forEach(function (view) { view.classList.add("hidden"); });
       button.classList.add("active");
       document.getElementById(button.getAttribute("data-tab")).classList.remove("hidden");
+      if (history.replaceState) history.replaceState(null, "", "#" + button.getAttribute("data-tab"));
     });
   });
+  var initialTab = document.querySelector(".tab[data-tab='" + location.hash.slice(1) + "']");
+  if (initialTab) initialTab.click();
 
   var painted = false;
 
   function render() {
     renderMarket();
     if (!painted) {
+      paintSector();
       paintPharma();
       paintMethod();
       painted = true;
     }
+    fillSector();
     fillPharma();
     fillMethod();
     saveState();
@@ -206,6 +225,121 @@
   function cardLoop(kind, title, kpi, text) {
     return "<div class='card'><span class='tag " + kind + "'>" + esc(title) + "</span><div class='kpi'>" +
       esc(kpi) + "</div><p class='small'>" + esc(text) + "</p></div>";
+  }
+
+  function paintSector() {
+    var a = M.OBSERVED.apparel;
+    var exportMln = a.textileClothingExportThsUsd / 1000;
+    var exportDrop = 100 - a.textileClothingExportValueIndex;
+    document.getElementById("sector").innerHTML =
+      "<div class='card'><h2>Откуда число, куда выходит, какой вывод и какая мера</h2>" +
+      "<p class='small'>Удар по складам российских маркетплейсов в июле 2026 года бьёт по каналу заказов швейных цехов. Стрелка замыкается только числом. Пустое поле оставляет следующую стрелку пустой.</p>" +
+      "<div class='flow'>" +
+        "<div class='flow-col'><p class='flow-label'>1. Факт НСК</p>" +
+          "<div class='node live'><strong>Выпуск одежды = 100</strong><p class='small'>Физический объём январь–декабрь 2025: " + signed(a.volumeGrowth2025Pct, 1) +
+          "% к 2024. Этот темп уже случился и на 2026 не переносится.</p></div>" +
+          "<div class='node live'><strong>Группа текстиль, одежда, обувь, кожа</strong><p class='small'>" + fmt(a.groupValue2025MlnSom, 0) +
+          " млн сомов, " + signed(a.groupVolumeGrowth2025Pct, 1) + "%, " + fmt(a.groupShareOfManufacturingPct, 1) + "% обработки.</p></div>" +
+          "<div class='node live'><strong>Экспорт «одежда текстильная»</strong><p class='small'>Январь–ноябрь 2025: " + fmt(exportMln, 1) +
+          " млн долларов, индекс стоимости " + fmt(a.textileClothingExportValueIndex, 1) + " (" + signed(-exportDrop, 1) + "%).</p></div>" +
+          "<div class='node live'><strong>В Россию — страна, не площадка</strong><p class='small'>Одежда и принадлежности: " + fmt(a.russiaClothingAccessoriesMlnUsd, 1) +
+          " млн долларов. Доли Wildberries и Ozon в бюллетене нет.</p></div>" +
+          "<div class='node live'><strong>Внутри одежды ряды разные</strong><p class='small'>Верхняя мужская " + fmt(a.mensOuterwearThsPcs, 0) +
+          " тыс. шт., индекс " + fmt(a.mensOuterwearIndex, 1) + ". Женская " + fmt(a.womensOuterwearThsPcs, 0) +
+          " тыс. шт., индекс " + fmt(a.womensOuterwearIndex, 1) + ". Нижнее бельё " + fmt(a.underwearThsPcs, 0) +
+          " тыс. шт., индекс " + fmt(a.underwearIndex, 1) + ".</p></div>" +
+        "</div>" +
+        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
+        "<div class='flow-col'><p class='flow-label'>2. Удар по каналу</p>" +
+          "<div class='node wait' id='nodeChannel'><strong>Доля выпуска через маркетплейсы, %</strong>" +
+          "<input id='apparelChannel' type='text' inputmode='decimal' placeholder='нет в НСК'></div>" +
+          "<div class='node wait' id='nodeLoss'><strong>Какая часть этого канала потеряна, %</strong>" +
+          "<input id='apparelLoss' type='text' inputmode='decimal' placeholder='сценарий'></div>" +
+          "<div class='node wait' id='nodeExposed'><strong>Открытая часть выпуска</strong><p class='small' id='exposedText'>Доля канала × доля потерь.</p></div>" +
+        "</div>" +
+        "<div class='flow-arrow' id='arrowSplit' aria-hidden='true'><span></span></div>" +
+        "<div class='flow-col'><p class='flow-label'>3. Куда девается потеря</p>" +
+          "<div class='node wait' id='nodeRedirect'><strong>Другой покупатель, % потери</strong>" +
+          "<input id='apparelRedirect' type='text' inputmode='decimal' placeholder='нет коэффициента'>" +
+          "<p class='small muted'>Прямой контракт, другая страна, внутренний заказ.</p></div>" +
+          "<div class='node wait' id='nodeStock'><strong>Запас, % потери</strong>" +
+          "<input id='apparelStock' type='text' inputmode='decimal' placeholder='нет коэффициента'>" +
+          "<p class='small muted'>Цех шьёт, продажа не состоялась.</p></div>" +
+          "<div class='node wait' id='nodeCut'><strong>Остановка пошива</strong><p class='small' id='cutText'>Остаток потери: 100 − покупатель − запас.</p></div>" +
+          "<div class='node wait' id='nodeOutput'><strong>Индекс выпуска</strong><p class='small' id='outputText'>Считается, когда раскладка сходится.</p></div>" +
+          "<div class='node wait' id='nodeSales'><strong>Индекс продаж</strong><p class='small' id='salesText'>Запас в продажи не возвращается.</p></div>" +
+        "</div>" +
+        "<div class='flow-arrow' id='arrowOut' aria-hidden='true'><span></span></div>" +
+        "<div class='flow-col'><p class='flow-label'>4. Вывод и мера</p>" +
+          "<div class='node wait' id='nodeConclusion'><strong>Вывод</strong><p class='small' id='conclusionText'></p></div>" +
+          "<div class='node wait' id='nodeMeasures'><strong>Мера, которая следует из этой стрелки</strong><ul class='small' id='measureList'></ul></div>" +
+          "<div class='node stop' id='nodeScore'><strong>Балл плана №7</strong><p class='small' id='scoreArrow'>Стрелка обрывается. Балл текстиля индекс выпуска не меняет.</p></div>" +
+        "</div>" +
+      "</div>" +
+      "<p class='eq'>открытая часть, % выпуска = доля канала × доля потерь / 100<br>индекс выпуска = 100 − открытая часть × (100 − покупатель − запас) / 100<br>индекс продаж = 100 − открытая часть × (100 − покупатель) / 100<br>покупатель и запас — проценты потерянных продаж</p></div>";
+    ["apparelChannel", "apparelLoss", "apparelRedirect", "apparelStock"].forEach(function (id) {
+      var input = document.getElementById(id);
+      input.value = state[id];
+      input.addEventListener("input", function () {
+        state[id] = input.value;
+        fillSector();
+        saveState();
+      });
+    });
+  }
+
+  function markNode(id, mode) {
+    var node = document.getElementById(id);
+    node.classList.remove("live", "wait", "stop");
+    node.classList.add(mode);
+  }
+
+  function fillSector() {
+    var channel = numOrNull(state.apparelChannel);
+    var loss = numOrNull(state.apparelLoss);
+    var redirect = numOrNull(state.apparelRedirect);
+    var stock = numOrNull(state.apparelStock);
+    var reading = M.sectorReading({
+      channelSharePct: channel,
+      lossPct: loss,
+      redirectPct: redirect,
+      stockPct: stock
+    });
+    var response = reading.response;
+    markNode("nodeChannel", channel == null ? "wait" : "live");
+    markNode("nodeLoss", loss == null ? "wait" : "live");
+    markNode("nodeExposed", response.exposedPct == null ? "wait" : "live");
+    markNode("nodeRedirect", redirect == null ? "wait" : "live");
+    markNode("nodeStock", stock == null ? "wait" : "live");
+    var cutMode = response.passThrough == null ? "wait" : (response.passThrough > 0 ? "stop" : "live");
+    markNode("nodeCut", cutMode);
+    markNode("nodeOutput", response.outputIndex == null ? "wait" : "live");
+    markNode("nodeSales", response.salesIndex == null ? "wait" : "live");
+    markNode("nodeConclusion", reading.stage === "closed" || reading.stage === "none" ? "live" : (reading.stage === "broken" ? "stop" : "wait"));
+    markNode("nodeMeasures", reading.stage === "channel" || reading.stage === "split" ? "wait" : "live");
+    document.getElementById("arrowSplit").classList.toggle("on", response.exposedPct != null);
+    document.getElementById("arrowOut").classList.toggle("on", reading.stage === "closed" || reading.stage === "none");
+    document.getElementById("exposedText").textContent = response.exposedPct == null
+      ? "Доля канала × доля потерь."
+      : fmt(response.exposedPct, 1) + "% выпуска 2025 года стоит на задетом канале.";
+    document.getElementById("cutText").textContent = response.passThrough == null
+      ? "Остаток потери: 100 − покупатель − запас."
+      : fmt(response.passThrough * 100, 1) + "% потерянных продаж режет пошив.";
+    document.getElementById("outputText").textContent = response.outputIndex == null
+      ? (response.ceilingIndex == null
+        ? "Считается, когда раскладка сходится."
+        : "Пока пусто. Потолок при полном сокращении пошива: " + fmt(response.ceilingIndex, 1) + ".")
+      : fmt(response.outputIndex, 1) + " к физическому объёму 2025 года.";
+    document.getElementById("salesText").textContent = response.salesIndex == null
+      ? "Запас в продажи не возвращается."
+      : fmt(response.salesIndex, 1) + ". В запас уходит " + fmt(response.inventoryPct, 1) + "% базового выпуска.";
+    document.getElementById("conclusionText").textContent = reading.conclusion;
+    document.getElementById("measureList").innerHTML = reading.measures.map(function (item) {
+      return "<li>" + esc(item) + "</li>";
+    }).join("");
+    var gap = M.GAPS.find(function (item) { return item.id === "№7"; });
+    document.getElementById("scoreArrow").textContent =
+      "Стрелка обрывается. Балл " + M.planScore(gap) + " индекс выпуска не меняет.";
   }
 
   function paintPharma() {
