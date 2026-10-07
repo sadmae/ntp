@@ -1,0 +1,34 @@
+.section-title { font-size: 20px; margin: 4px 0 14px; }
+.home-card .kpi { font-size: 22px; }
+.home-card h3 { font-size: 16px; }
+.step { border-left: 3px solid var(--border); padding-left: 10px; margin: 10px 0; }
+.step.act { border-left-color: var(--accent); }
+.step p { margin: 0 0 4px; font-size: 14px; }
+.step-label { font-size: 11px !important; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.trust-row { display: grid; grid-template-columns: 190px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: start; }
+.trust-row:last-child { border-bottom: 0; }
+.trust-row p { margin: 0 0 4px; font-size: 14px; }
+table.reg td, table.reg th { font-size: 13px; }
+table.reg select, table.reg input[type="date"] {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 8px; font-size: 13px; width: 100%;
+}
+.reg-wrap { overflow-x: auto; }
+details > summary { cursor: pointer; }
+details[open] > summary { margin-bottom: 12px; }
+#legend { margin-top: 14px; }
+.tag.observed, .tag.one_year, .tag.missing { margin-bottom: 4px; }
+@media (max-width: 720px) {
+  .trust-row { grid-template-columns: 1fr; gap: 4px; }
+}
+@media print {
+  body { background: #fff; color: #111; }
+  header, main, footer { max-width: none; padding: 8px 0; }
+  nav, #legend, #scenarios, #data, #askRegistry select, #askRegistry input { display: none !important; }
+  #home { display: block !important; }
+  .card, .node, .step { background: #fff !important; color: #111 !important; border-color: #bbb !important; break-inside: avoid; }
+  .muted, .lead, .eyebrow, .step-label { color: #444 !important; }
+  .kpi, h1, h2, h3 { color: #111 !important; }
+  .grid.three { grid-template-columns: 1fr; }
+  table.reg th, table.reg td { color: #111 !important; border-color: #bbb !important; }
+}
