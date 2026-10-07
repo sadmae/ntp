@@ -167,7 +167,44 @@ ol.steps li { margin: 0 0 10px; }
   border: 5px solid transparent;
   border-top: 7px solid var(--accent);
 }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+button.action { border-radius: 10px; padding: 10px 14px; }
+.jobs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.job {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+}
+.job:hover, .job:focus { border-color: var(--accent); }
+.job strong { display: block; font-size: 18px; margin: 6px 0 8px; }
+.job .fact { display: block; color: var(--muted); font-size: 14px; }
+.step-no { color: var(--accent); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.split { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr); gap: 14px; align-items: start; }
+.answer { position: sticky; top: 12px; }
+.answer .kpi { font-size: 40px; line-height: 1.1; margin: 0 0 4px; }
+details.fold {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+details.fold > summary { cursor: pointer; font-weight: 700; }
+details.fold > summary:hover { color: var(--accent); }
+details.fold .card { background: transparent; border: 0; padding: 12px 0 0; margin: 0; }
+.sr-arrows { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+input[type="text"] { font-size: 16px; }
+@media (max-width: 800px) {
+  .jobs, .split { grid-template-columns: 1fr; }
+  .answer { position: static; order: -1; }
+}
 @media (max-width: 980px) {
   .flow, .chain { grid-template-columns: 1fr; }
   .chain { flex-direction: column; }

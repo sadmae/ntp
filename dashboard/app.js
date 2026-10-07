@@ -74,28 +74,41 @@
     return isFinite(n) ? n : null;
   }
 
+  var tabAlias = { guide: "start", worked: "start", method: "start" };
+
+  function showTab(name) {
+    var id = tabAlias[name] || name;
+    var button = document.querySelector(".tab[data-tab='" + id + "']");
+    if (!button) return;
+    document.querySelectorAll(".tab").forEach(function (tab) { tab.classList.remove("active"); });
+    document.querySelectorAll(".view").forEach(function (view) { view.classList.add("hidden"); });
+    button.classList.add("active");
+    document.getElementById(id).classList.remove("hidden");
+    var missing = document.getElementById("missingBox");
+    if (name === "method" && missing) missing.open = true;
+    if (history.replaceState) history.replaceState(null, "", "#" + (name || id));
+  }
+
   document.querySelectorAll(".tab").forEach(function (button) {
     button.addEventListener("click", function () {
-      document.querySelectorAll(".tab").forEach(function (tab) { tab.classList.remove("active"); });
-      document.querySelectorAll(".view").forEach(function (view) { view.classList.add("hidden"); });
-      button.classList.add("active");
-      document.getElementById(button.getAttribute("data-tab")).classList.remove("hidden");
-      if (history.replaceState) history.replaceState(null, "", "#" + button.getAttribute("data-tab"));
+      showTab(button.getAttribute("data-tab"));
     });
   });
-  document.querySelectorAll("[data-goto]").forEach(function (button) {
-    button.addEventListener("click", function () {
-      var target = document.querySelector(".tab[data-tab='" + button.getAttribute("data-goto") + "']");
-      if (target) target.click();
-      window.scrollTo(0, 0);
-    });
+  document.body.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-goto]");
+    if (!button) return;
+    showTab(button.getAttribute("data-goto"));
+    window.scrollTo(0, 0);
   });
-  var initialTab = document.querySelector(".tab[data-tab='" + location.hash.slice(1) + "']");
-  if (initialTab) initialTab.click();
+  if (location.hash.length > 1) showTab(location.hash.slice(1));
+  window.addEventListener("hashchange", function () {
+    showTab(location.hash.length > 1 ? location.hash.slice(1) : "start");
+  });
 
   var painted = false;
 
   function render() {
+    paintHome();
     renderMarket();
     if (!painted) {
       paintWorked();
@@ -108,6 +121,20 @@
     fillPharma();
     fillMethod();
     saveState();
+  }
+
+  function paintHome() {
+    var o = M.OBSERVED;
+    document.getElementById("jobMarketFact").textContent =
+      "ВВП " + signed(o.gdpRealGrowthPct[2025], 1) + "%, экспорт золота " + signed(o.goldExportGrowth2025Pct, 1) +
+      "%, стройка " + signed(o.constructionVolumeGrowth2025Pct, 1) + "%.";
+    document.getElementById("jobSectorFact").textContent =
+      "Одежда в 2025 году " + signed(o.apparel.volumeGrowth2025Pct, 1) +
+      "% к 2024. Доли маркетплейса в данных нет: пока её нет, следующий выпуск не считается.";
+    document.getElementById("jobPharmaFact").textContent =
+      "По докладу доля своих " + fmt(M.FACTS.pharma.share2021, 1) + "% → " + fmt(M.FACTS.pharma.share2023, 1) +
+      "%. Выпуск 2025 года вырос в " + fmt(o.pharmaVolume2025FactorOfficial, 1) +
+      " раза. На долю рынка этот ползунок сам не влияет.";
   }
 
   function renderMarket() {
@@ -179,41 +206,44 @@
 
     document.getElementById("market").innerHTML =
       "<div class='grid three'>" +
-        cardLoop("demand", "Контур спроса", fmt(o.remittancesNetMlnUsd[2025], 1) + " млн $",
-          "Чистый приток переводов в 2025, " + signed(o.remittancesGrowthPct[2025], 1) + "%. Реальная зарплата " +
-          signed(o.realWageGrowth2025Pct, 1) + "%. Стройка " + signed(o.constructionVolumeGrowth2025Pct, 1) +
-          "%, торговля " + signed(o.tradeVolumeGrowth2025Pct, 1) + "%. Средства населения в инвестициях " +
-          signed(householdGrowth, 1) + "% к 2024. Стройматериалы " + signed(o.materialsGrowth2025Pct, 1) + "%.") +
-        cardLoop("budget", "Контур бюджета и кредита", signed(budgetGrowth, 0) + "%",
-          "Республиканский бюджет в инвестициях к 2024 году. Иностранные кредиты " + signed(loanGrowth, 0) +
-          "%, кредиты банков " + signed(creditGrowth, 0) + "%. Это рычаг финансирования, его нельзя подписывать как научно-технический прогресс.") +
-        cardLoop("gold", "Контур золота", fmt(o.goldExportMlnUsd[2025], 1) + " млн $",
-          "Экспорт золота после " + fmt(o.goldExportMlnUsd[2024], 1) + " млн в 2024 (" + signed(o.goldExportGrowth2025Pct, 1) +
-          "%). Весь товарный экспорт " + signed(o.goodsExportGrowth2025Pct, 1) + "%. ВВП при этом " +
-          signed(o.gdpRealGrowthPct[2025], 1) + "%. Внутренний бум и внешняя цена разошлись.") +
+        cardLoop("demand", "Спрос внутри страны", signed(o.constructionVolumeGrowth2025Pct, 1) + "% стройка",
+          "Переводы " + signed(o.remittancesGrowthPct[2025], 1) + "%, торговля " + signed(o.tradeVolumeGrowth2025Pct, 1) +
+          "%, зарплата " + signed(o.realWageGrowth2025Pct, 1) + "%. Стройматериалы " + signed(o.materialsGrowth2025Pct, 1) +
+          "%. Это один строительный цикл.") +
+        cardLoop("budget", "Решение о деньгах", signed(budgetGrowth, 0) + "% бюджет",
+          "Республиканский бюджет в инвестициях к 2024 году. Кредиты банков " + signed(creditGrowth, 0) +
+          "%, иностранные кредиты " + signed(loanGrowth, 0) + "%. Это финансирование, не научный сдвиг.") +
+        cardLoop("gold", "Золото и ВВП", signed(o.goldExportGrowth2025Pct, 1) + "% золото",
+          "Товарный экспорт " + signed(o.goodsExportGrowth2025Pct, 1) + "%, ВВП " + signed(o.gdpRealGrowthPct[2025], 1) +
+          "%, промышленность " + signed(o.industryVolumeGrowth2025Pct, 1) + "%. Заголовок ВВП этот разрыв не заменяет.") +
       "</div>" +
       technologyChart() +
-      "<div class='card'><h2>Доля в ВВП и выпуск — разные величины</h2>" +
-      "<p class='small muted'>Добавленная стоимость в текущих ценах посчитана как доля × ВВП. Это следствие двух рядов НСК, не отдельная публикация отраслевого выпуска.</p>" +
+      "<div class='card'><h2>Доля в экономике — не объём выпуска</h2>" +
+      "<p>Сельское хозяйство: доля ВВП " + fmt(o.gdpShares.agriculture[2021], 1) + "% в 2021 году → " +
+      fmt(o.gdpShares.agriculture[2025], 1) + "% в 2025-м. Физический объём за те же годы примерно " + signed(agriVolume, 0) +
+      "%. Сжался вес сектора в общем итоге, не сам выпуск. Решение принимают по выпуску.</p></div>" +
+      "<details class='fold'><summary>Доли и добавленная стоимость по секторам</summary>" +
+      "<p class='small muted'>Добавленная стоимость в текущих ценах — это доля × ВВП. Следствие двух рядов Нацстаткома, не отдельная публикация выпуска.</p>" +
       "<table><thead><tr><th>Сектор</th><th class='num'>Доля 2021</th><th class='num'>Доля 2025</th><th class='num'>ВДС 2021, млрд</th><th class='num'>ВДС 2025, млрд</th></tr></thead><tbody>" +
-      sectorRows + "</tbody></table></div>" +
-      "<div class='grid two'><div class='card'><h2>Кто финансировал инвестиции</h2>" +
-      "<p class='small muted'>Доля источника в инвестициях в основной капитал, %. Серая полоса — 2021, синяя — 2025.</p>" +
+      sectorRows + "</tbody></table></details>" +
+      "<details class='fold'><summary>Кто дал деньги и куда сел кредит</summary>" +
+      "<div class='grid two'><div><h2>Кто финансировал инвестиции</h2>" +
+      "<p class='small muted'>Доля источника, %. Серая полоса — 2021, синяя — 2025. Средства населения к 2024: " + signed(householdGrowth, 1) + "%.</p>" +
       sourceBars + "</div>" +
-      "<div class='card'><h2>Кредит идёт в потребление и торговлю</h2>" +
+      "<div><h2>Кредит идёт людям и торговле</h2>" +
       "<p class='kpi'>" + fmt(o.credit2025MlnSom / 1000, 1) + "</p>" +
-      "<p class='small muted'>млрд сомов кредитов банков и небанковских организаций на конец 2025 года, сообщение НСК. Около " +
-      fmt(o.credit2025SharesPct.consumer, 0) + "% — потребительские, " + fmt(o.credit2025SharesPct.trade, 0) +
-      "% — торговля, " + fmt(o.credit2025SharesPct.mortgage, 0) + "% — ипотека, " +
-      fmt(o.credit2025SharesPct.agriculture, 1) + "% — сельское хозяйство.</p>" +
-      "<div class='callout warn'><p>Таблица инвестиций по видам деятельности не сходится с итогом: в 2025 году не распределено " +
-      bln(residual) + " сомов (" + fmt(residualShare, 0) + "%). Строки «строительство» в ней — капитал строительных организаций, а не объём стройки. Остаток не подписан жильём: такой строки в таблице нет.</p></div>" +
+      "<p class='small muted'>млрд сомов на конец 2025 года. Около " +
+      fmt(o.credit2025SharesPct.consumer, 0) + "% — людям, " + fmt(o.credit2025SharesPct.trade, 0) +
+      "% — торговле, " + fmt(o.credit2025SharesPct.mortgage, 0) + "% — ипотеке, " +
+      fmt(o.credit2025SharesPct.agriculture, 1) + "% — сельскому хозяйству.</p>" +
+      "<div class='callout warn'><p>В таблице инвестиций по видам деятельности за 2025 год не распределено " +
+      bln(residual) + " сомов (" + fmt(residualShare, 0) + "%). Строка «строительство» там — капитал строительных организаций, не объём стройки. Остаток жильём не подписан: такой строки нет.</p></div>" +
       "<p class='small muted'>Курс на конец 2025 года " + fmt(o.usdKgsEnd2025, 2) + " сома за доллар, " +
-      signed(o.usdKgsEnd2025ChangePct, 1) + "% к концу 2024. Год бума прошёл без курсового скачка.</p></div></div>" +
-      "<div class='card'><h2>Балл плана рядом с реакцией реальности</h2>" +
-      "<p class='small muted'>Балл — сумма критериев доклада. Реакция взята из рядов НСК и НБКР там, где ряд есть.</p>" +
-      "<table><thead><tr><th>ID</th><th>Разрыв</th><th class='num'>Балл</th><th>Что из этого следует для прогноза</th></tr></thead><tbody>" +
-      gapRows + "</tbody></table></div>";
+      signed(o.usdKgsEnd2025ChangePct, 1) + "% к концу 2024.</p></div></div></details>" +
+      "<details class='fold'><summary>Балл важности темы — это не прогноз</summary>" +
+      "<p class='small muted'>Балл сложен из критериев доклада. Он говорит, что важно запланировать. На место недостающего коэффициента он не ставится.</p>" +
+      "<table><thead><tr><th>ID</th><th>Тема</th><th class='num'>Балл</th><th>Что из этого следует для прогноза</th></tr></thead><tbody>" +
+      gapRows + "</tbody></table></details>";
   }
 
   function technologyChart() {
@@ -243,87 +273,69 @@
     var p = pharma.input;
     var a = apparel.input;
     document.getElementById("worked").innerHTML =
-      "<div class='card callout warn'><p><strong>Цифры на этой вкладке примерные и только для расчёта.</strong> Ими показана связь рычага и коэффициента. Это не данные Нацстаткома и не оценка по ряду. В прогноз их подставлять нельзя, пока на месте примера не окажется факт.</p></div>" +
-      "<div class='card'><p class='flow-label'>Лекарства: рычаг доходит до рынка только через коэффициент</p>" +
-      "<p class='small'>База из доклада: доля своих лекарств 2,0% в 2023 году, локальная переработка около 6% (середина диапазона 5–7%). Дальше подставлен пример: переработку подняли до " +
-      fmt(p.processingNow, 0) + "%, коэффициент k = " + fmt(p.k, 1) + " пункта доли на один пункт переработки.</p>" +
-      "<div class='chain'>" +
-        "<div class='node live'><strong>База</strong><p class='small'>Доля своих " + fmt(p.baseShare, 1) + "%. Переработка " + fmt(p.processingBase, 0) + "%.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node wait'><strong>Рычаг, пример</strong><p class='small'>Переработка " + fmt(p.processingBase, 0) + "% → " + fmt(p.processingNow, 0) + "%.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node wait'><strong>Коэффициент, пример</strong><p class='small'>k = " + fmt(p.k, 1) + ". Столько пунктов доли рынка даёт один пункт переработки.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node live'><strong>Результат расчёта</strong><p class='small'>Доля своих " + fmt(pharma.share, 1) + "%. " +
-        fmt(p.baseShare, 1) + " + " + fmt(p.k, 1) + " × (" + fmt(p.processingNow, 0) + " − " + fmt(p.processingBase, 0) + ").</p></div>" +
+      "<div class='card'><h2>Как считается ответ</h2>" +
+      "<p><strong>Цифры в этом блоке примерные и только для расчёта.</strong> Это не данные Нацстаткома. Свои числа вводятся на вкладках «Швейка» и «Лекарства».</p>" +
+      "<div class='grid two'>" +
+        "<div class='node live'><strong>Швейка: четыре числа сошлись</strong>" +
+        "<p class='small'>" + fmt(a.channelSharePct, 0) + "% выпуска шло через канал, потеряна " + fmt(a.lossPct, 0) +
+        "% этого канала. Под ударом " + fmt(closed.exposedPct, 0) + "% выпуска. Из потери " + fmt(a.redirectPct, 0) +
+        "% ушло другому покупателю, " + fmt(a.stockPct, 0) + "% легло в запас, остальное режет пошив.</p>" +
+        "<p class='kpi'>" + fmt(closed.outputIndex, 0) + "</p>" +
+        "<p class='small'>индекс выпуска. Продажи " + fmt(closed.salesIndex, 0) + ". В запас " + fmt(closed.inventoryPct, 0) + "% базы.</p>" +
+        "<button type='button' class='action' id='useApparelExample'>Подставить этот пример в швейку</button></div>" +
+        "<div class='node stop'><strong>Те же потери, раскладка пустая</strong>" +
+        "<p class='small'>Под ударом те же " + fmt(open.exposedPct, 0) + "%, но не сказано, сколько ушло другому покупателю и сколько легло в запас.</p>" +
+        "<p class='kpi'>нет ответа</p>" +
+        "<p class='small'>Индекс выпуска не считается. Если резать пошив один к одному, потолок " + fmt(open.ceilingIndex, 0) + ". Это не прогноз.</p>" +
+        "<p class='small'>Кредит в сомах сам по себе индекс тоже не двигает: нет числа «сколько пошива даёт один сом».</p></div>" +
       "</div>" +
-      "<p class='small'>При потреблении 2023 года, " + fmt(pharma.consumptionMln, 0) + " млн сомов по тождеству доклада, отечественные продажи в примере " +
-      fmt(pharma.baseMarket.domesticMln, 0) + " → " + fmt(pharma.market.domesticMln, 0) + " млн, импорт " +
-      fmt(pharma.baseMarket.importMln, 0) + " → " + fmt(pharma.market.importMln, 0) + " млн.</p>" +
-      "<div class='grid two read-out'>" +
-        "<div class='node live'><strong>Вывод</strong><p class='small'>Коэффициент переводит сдвиг рычага в другой показатель. Здесь десять пунктов переработки дают два пункта доли своих.</p></div>" +
-        "<div class='node live'><strong>Мера</strong><p class='small'>Пока k примерный, результат подписывать «учебный сценарий». В рабочий прогноз пускать после замены k числом из нового факта: (новая доля − 2) / (новая переработка − 6).</p></div>" +
-      "</div>" +
-      "<div class='down-arrow' aria-hidden='true'><span></span></div>" +
-      "<p class='flow-label'>Тот же рычаг, коэффициент пустой</p>" +
-      "<div class='chain'>" +
-        "<div class='node wait'><strong>Рычаг тот же</strong><p class='small'>Переработка " + fmt(p.processingNow, 0) + "%.</p></div>" +
-        "<div class='flow-arrow break' aria-hidden='true'><span></span></div>" +
-        "<div class='node stop'><strong>k пустой</strong><p class='small'>Доля своих не считается и остаётся " + fmt(p.baseShare, 1) + "%.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node live'><strong>Своя строка рычага всё же сдвигается</strong><p class='small'>Экспорт сырья без обработки " + fmt(pharma.rawBefore, 0) + "% → " + fmt(pharma.rawAfter, 0) + "%. Это тождество: 100 минус переработка.</p></div>" +
-      "</div>" +
-      "<div class='grid two read-out'>" +
-        "<div class='node live'><strong>Вывод</strong><p class='small'>Без коэффициента рычаг двигает только собственный баланс. До рынка готовых лекарств он не доходит.</p></div>" +
-        "<div class='node live'><strong>Мера</strong><p class='small'>Рост переработки сам по себе не объявлять ростом доли своих. Сначала снять k.</p></div>" +
-      "</div></div>" +
-      "<div class='card'><p class='flow-label'>Швейка: удар доходит до пошива только через раскладку</p>" +
-      "<p class='small'>Все четыре доли ниже примерные и только для расчёта. Доли выпуска через маркетплейсы в бюллетене Нацстаткома нет.</p>" +
-      "<div class='chain'>" +
-        "<div class='node wait'><strong>Канал, пример</strong><p class='small'>" + fmt(a.channelSharePct, 0) + "% выпуска шло через маркетплейсы.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node wait'><strong>Потеря, пример</strong><p class='small'>Потеряна " + fmt(a.lossPct, 0) + "% этого канала.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node live'><strong>Открытая часть</strong><p class='small'>" + fmt(closed.exposedPct, 1) + "% выпуска. " + fmt(a.channelSharePct, 0) + " × " + fmt(a.lossPct, 0) + " / 100.</p></div>" +
-      "</div>" +
-      "<div class='down-arrow' aria-hidden='true'><span></span></div>" +
-      "<div class='chain'>" +
-        "<div class='node wait'><strong>Другой покупатель, пример</strong><p class='small'>" + fmt(a.redirectPct, 0) + "% потери.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node wait'><strong>Запас, пример</strong><p class='small'>" + fmt(a.stockPct, 0) + "% потери.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node stop'><strong>Остановка пошива</strong><p class='small'>Остаток " + fmt(closed.passThrough * 100, 0) + "% потери.</p></div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='node live'><strong>Индексы</strong><p class='small'>Выпуск " + fmt(closed.outputIndex, 1) + ". Продажи " + fmt(closed.salesIndex, 1) + ". В запас " + fmt(closed.inventoryPct, 1) + "% базы.</p></div>" +
-      "</div>" +
-      "<div class='grid two read-out'>" +
-        "<div class='node live'><strong>Вывод</strong><p class='small'>" + esc(apparel.closed.conclusion) + "</p></div>" +
-        "<div class='node live'><strong>Мера</strong><p class='small'>" + esc(apparel.closed.measures[0]) + "</p></div>" +
-      "</div>" +
-      "<div class='down-arrow' aria-hidden='true'><span></span></div>" +
-      "<p class='flow-label'>Тот же удар, раскладка пустая</p>" +
-      "<div class='chain'>" +
-        "<div class='node live'><strong>Открыто те же " + fmt(open.exposedPct, 0) + "%</strong><p class='small'>Канал и потеря заданы, покупатель и запас пустые.</p></div>" +
-        "<div class='flow-arrow break' aria-hidden='true'><span></span></div>" +
-        "<div class='node stop'><strong>Индекс выпуска пуст</strong><p class='small'>Потолок, если пошив режется один к одному: " + fmt(open.ceilingIndex, 0) + ". Это не прогноз.</p></div>" +
-      "</div>" +
-      "<div class='grid two read-out'>" +
-        "<div class='node live'><strong>Вывод</strong><p class='small'>" + esc(apparel.open.conclusion) + "</p></div>" +
-        "<div class='node live'><strong>Мера</strong><p class='small'>" + esc(apparel.open.measures[0]) + " " + esc(apparel.open.measures[1]) + "</p></div>" +
-      "</div>" +
-      "<div class='down-arrow' aria-hidden='true'><span></span></div>" +
-      "<p class='flow-label'>Кредит — рычаг, пока без коэффициента</p>" +
-      "<div class='chain'>" +
-        "<div class='node wait'><strong>Рычаг</strong><p class='small'>Льготный кредит в сомах. Сумма на этой вкладке нарочно не подставлена: без коэффициента она ничего не меняет.</p></div>" +
-        "<div class='flow-arrow break' aria-hidden='true'><span></span></div>" +
-        "<div class='node stop'><strong>Коэффициент пуст</strong><p class='small'>Сколько пошива или запаса даёт один сом кредита, в рядах нет.</p></div>" +
-        "<div class='flow-arrow break' aria-hidden='true'><span></span></div>" +
-        "<div class='node stop'><strong>Индекс выпуска не меняется</strong><p class='small'>Сомы остаются на своей строке и в пошив не переходят.</p></div>" +
-      "</div>" +
-      "<div class='grid two read-out'>" +
-        "<div class='node live'><strong>Вывод</strong><p class='small'>Рычаг и коэффициент связаны умножением. Нет второго — произведение не считается, каким бы большим ни был первый.</p></div>" +
-        "<div class='node live'><strong>Мера</strong><p class='small'>Сначала назвать, что именно кредит держит: запас, ожидание покупателя или лишний пошив. Потом снять, сколько выпуска даёт один сом. До этого кредит в прогноз пошива не ставить.</p></div>" +
-      "</div></div>";
+      "<div class='node wait'><strong>Лекарства: связь задаётся отдельным числом</strong>" +
+      "<p class='small'>Доля своих была " + fmt(p.baseShare, 1) + "%. В примере переработку подняли с " + fmt(p.processingBase, 0) +
+      "% до " + fmt(p.processingNow, 0) + "%. Один пункт переработки даёт " + fmt(p.k, 1) + " пункта доли.</p>" +
+      "<p class='small'>" + fmt(p.baseShare, 1) + " + " + fmt(p.k, 1) + " × (" + fmt(p.processingNow, 0) + " − " + fmt(p.processingBase, 0) +
+      ") = <strong>" + fmt(pharma.share, 1) + "%</strong>. Если это число не указано, доля своих остаётся " + fmt(p.baseShare, 1) +
+      "%. Сырьё без обработки при этом всё равно меняется: " + fmt(pharma.rawBefore, 0) + "% → " + fmt(pharma.rawAfter, 0) +
+      "%, потому что это 100 минус переработка.</p>" +
+      "<button type='button' class='action' id='usePharmaExample'>Подставить этот пример в лекарства</button></div></div>";
+    document.getElementById("useApparelExample").addEventListener("click", function () {
+      applyApparel(true);
+      showTab("sector");
+      window.scrollTo(0, 0);
+    });
+    document.getElementById("usePharmaExample").addEventListener("click", function () {
+      applyPharmaExample(true);
+      showTab("pharma");
+      window.scrollTo(0, 0);
+    });
+  }
+
+  function applyApparel(example) {
+    var sample = M.ILLUSTRATION.apparel;
+    var values = {
+      apparelChannel: example ? String(sample.channelSharePct) : "",
+      apparelLoss: example ? String(sample.lossPct) : "",
+      apparelRedirect: example ? String(sample.redirectPct) : "",
+      apparelStock: example ? String(sample.stockPct) : ""
+    };
+    Object.keys(values).forEach(function (id) {
+      state[id] = values[id];
+      var input = document.getElementById(id);
+      if (input) input.value = values[id];
+    });
+    fillSector();
+    saveState();
+  }
+
+  function applyPharmaExample(example) {
+    var sample = M.ILLUSTRATION.pharma;
+    state.processing = example ? sample.processingNow : M.FACTS.pharma.localProcessingMid;
+    state.k = example ? String(sample.k) : "";
+    var processing = document.getElementById("processing");
+    var kInput = document.getElementById("kInput");
+    if (processing) processing.value = state.processing;
+    if (kInput) kInput.value = state.k;
+    fillPharma();
+    saveState();
   }
 
   function paintSector() {
@@ -331,51 +343,54 @@
     var exportMln = a.textileClothingExportThsUsd / 1000;
     var exportDrop = 100 - a.textileClothingExportValueIndex;
     document.getElementById("sector").innerHTML =
-      "<div class='card'><h2>Откуда число, куда выходит, какой вывод и какая мера</h2>" +
-      "<p class='small'>Удар по складам российских маркетплейсов в июле 2026 года бьёт по каналу заказов швейных цехов. Стрелка замыкается только числом. Пустое поле оставляет следующую стрелку пустой.</p>" +
-      "<div class='flow'>" +
-        "<div class='flow-col'><p class='flow-label'>1. Факт НСК</p>" +
-          "<div class='node live'><strong>Выпуск одежды = 100</strong><p class='small'>Физический объём январь–декабрь 2025: " + signed(a.volumeGrowth2025Pct, 1) +
-          "% к 2024. Этот темп уже случился и на 2026 не переносится.</p></div>" +
-          "<div class='node live'><strong>Группа текстиль, одежда, обувь, кожа</strong><p class='small'>" + fmt(a.groupValue2025MlnSom, 0) +
-          " млн сомов, " + signed(a.groupVolumeGrowth2025Pct, 1) + "%, " + fmt(a.groupShareOfManufacturingPct, 1) + "% обработки.</p></div>" +
-          "<div class='node live'><strong>Экспорт «одежда текстильная»</strong><p class='small'>Январь–ноябрь 2025: " + fmt(exportMln, 1) +
-          " млн долларов, индекс стоимости " + fmt(a.textileClothingExportValueIndex, 1) + " (" + signed(-exportDrop, 1) + "%).</p></div>" +
-          "<div class='node live'><strong>В Россию — страна, не площадка</strong><p class='small'>Одежда и принадлежности: " + fmt(a.russiaClothingAccessoriesMlnUsd, 1) +
-          " млн долларов. Доли Wildberries и Ozon в бюллетене нет.</p></div>" +
-          "<div class='node live'><strong>Внутри одежды ряды разные</strong><p class='small'>Верхняя мужская " + fmt(a.mensOuterwearThsPcs, 0) +
-          " тыс. шт., индекс " + fmt(a.mensOuterwearIndex, 1) + ". Женская " + fmt(a.womensOuterwearThsPcs, 0) +
-          " тыс. шт., индекс " + fmt(a.womensOuterwearIndex, 1) + ". Нижнее бельё " + fmt(a.underwearThsPcs, 0) +
-          " тыс. шт., индекс " + fmt(a.underwearIndex, 1) + ".</p></div>" +
-        "</div>" +
-        "<div class='flow-arrow on' aria-hidden='true'><span></span></div>" +
-        "<div class='flow-col'><p class='flow-label'>2. Удар по каналу</p>" +
-          "<div class='node wait' id='nodeChannel'><strong>Доля выпуска через маркетплейсы, %</strong>" +
-          "<input id='apparelChannel' type='text' inputmode='decimal' placeholder='нет в НСК'></div>" +
-          "<div class='node wait' id='nodeLoss'><strong>Какая часть этого канала потеряна, %</strong>" +
-          "<input id='apparelLoss' type='text' inputmode='decimal' placeholder='сценарий'></div>" +
-          "<div class='node wait' id='nodeExposed'><strong>Открытая часть выпуска</strong><p class='small' id='exposedText'>Доля канала × доля потерь.</p></div>" +
-        "</div>" +
-        "<div class='flow-arrow' id='arrowSplit' aria-hidden='true'><span></span></div>" +
-        "<div class='flow-col'><p class='flow-label'>3. Куда девается потеря</p>" +
-          "<div class='node wait' id='nodeRedirect'><strong>Другой покупатель, % потери</strong>" +
-          "<input id='apparelRedirect' type='text' inputmode='decimal' placeholder='нет коэффициента'>" +
+      "<div class='split'>" +
+        "<div class='card'>" +
+          "<h2>Четыре числа</h2>" +
+          "<p class='small'>База — физический объём одежды за 2025 год, он равен 100. Темп " + signed(a.volumeGrowth2025Pct, 1) +
+          "% к 2024 уже случился и на следующий год сам не переносится. Доли маркетплейса в бюллетене Нацстаткома нет.</p>" +
+          "<div class='node wait' id='nodeChannel'><strong>1. Какая доля выпуска шла через маркетплейсы, %</strong>" +
+          "<input id='apparelChannel' type='text' inputmode='decimal' placeholder='в данных нет'></div>" +
+          "<div class='node wait' id='nodeLoss'><strong>2. Какая часть этого канала потеряна, %</strong>" +
+          "<input id='apparelLoss' type='text' inputmode='decimal' placeholder='отменённые заказы и товар на складе'></div>" +
+          "<div class='node wait' id='nodeExposed'><strong>Сколько выпуска задето</strong><p class='small' id='exposedText'>Доля канала × доля потерь.</p></div>" +
+          "<div class='node wait' id='nodeRedirect'><strong>3. Другой покупатель, % от потери</strong>" +
+          "<input id='apparelRedirect' type='text' inputmode='decimal' placeholder='пусто — ответ не считается'>" +
           "<p class='small muted'>Прямой контракт, другая страна, внутренний заказ.</p></div>" +
-          "<div class='node wait' id='nodeStock'><strong>Запас, % потери</strong>" +
-          "<input id='apparelStock' type='text' inputmode='decimal' placeholder='нет коэффициента'>" +
-          "<p class='small muted'>Цех шьёт, продажа не состоялась.</p></div>" +
-          "<div class='node wait' id='nodeCut'><strong>Остановка пошива</strong><p class='small' id='cutText'>Остаток потери: 100 − покупатель − запас.</p></div>" +
-          "<div class='node wait' id='nodeOutput'><strong>Индекс выпуска</strong><p class='small' id='outputText'>Считается, когда раскладка сходится.</p></div>" +
-          "<div class='node wait' id='nodeSales'><strong>Индекс продаж</strong><p class='small' id='salesText'>Запас в продажи не возвращается.</p></div>" +
+          "<div class='node wait' id='nodeStock'><strong>4. Запас, % от потери</strong>" +
+          "<input id='apparelStock' type='text' inputmode='decimal' placeholder='пусто — ответ не считается'>" +
+          "<p class='small muted'>Цех шьёт, продажа не состоялась. Вместе с пунктом 3 не больше 100%.</p></div>" +
+          "<div class='actions'>" +
+            "<button type='button' class='action' id='btnApparelExample'>Учебный пример</button>" +
+            "<button type='button' class='action' id='btnApparelClear'>Очистить</button>" +
+          "</div>" +
+          "<p class='small' id='exampleNote' hidden>В полях учебный пример: 40, 50, 25 и 25. Это не факт.</p>" +
         "</div>" +
-        "<div class='flow-arrow' id='arrowOut' aria-hidden='true'><span></span></div>" +
-        "<div class='flow-col'><p class='flow-label'>4. Вывод и мера</p>" +
+        "<div class='card answer'>" +
+          "<p class='flow-label'>Ответ</p>" +
+          "<p class='kpi' id='outputHeadline'>—</p>" +
+          "<p class='small muted' id='outputCaption'>индекс выпуска к физическому объёму 2025 года</p>" +
+          "<div class='node wait' id='nodeOutput'><strong>Выпуск</strong><p class='small' id='outputText'>Считается, когда четыре числа сойдутся.</p></div>" +
+          "<div class='node wait' id='nodeSales'><strong>Продажи</strong><p class='small' id='salesText'>Запас в продажи не возвращается.</p></div>" +
+          "<div class='node wait' id='nodeCut'><strong>Что режет пошив</strong><p class='small' id='cutText'>Остаток потери: 100 − покупатель − запас.</p></div>" +
           "<div class='node wait' id='nodeConclusion'><strong>Вывод</strong><p class='small' id='conclusionText'></p></div>" +
-          "<div class='node wait' id='nodeMeasures'><strong>Мера, которая следует из этой стрелки</strong><ul class='small' id='measureList'></ul></div>" +
-          "<div class='node stop' id='nodeScore'><strong>Балл плана №7</strong><p class='small' id='scoreArrow'>Стрелка обрывается. Балл текстиля индекс выпуска не меняет.</p></div>" +
+          "<div class='node wait' id='nodeMeasures'><strong>Что делать</strong><ul class='small' id='measureList'></ul></div>" +
+          "<div class='node stop' id='nodeScore'><strong>Балл важности текстиля</strong><p class='small' id='scoreArrow'>На индекс выпуска не влияет.</p></div>" +
+          "<div class='sr-arrows' aria-hidden='true'><div class='flow-arrow' id='arrowSplit'><span></span></div><div class='flow-arrow' id='arrowOut'><span></span></div></div>" +
         "</div>" +
       "</div>" +
-      "<p class='eq'>открытая часть, % выпуска = доля канала × доля потерь / 100<br>индекс выпуска = 100 − открытая часть × (100 − покупатель − запас) / 100<br>индекс продаж = 100 − открытая часть × (100 − покупатель) / 100<br>покупатель и запас — проценты потерянных продаж</p></div>";
+      "<details class='fold'><summary>Что уже опубликовано по одежде</summary>" +
+        "<div class='node live'><strong>Группа текстиль, одежда, обувь, кожа</strong><p class='small'>" + fmt(a.groupValue2025MlnSom, 0) +
+        " млн сомов, " + signed(a.groupVolumeGrowth2025Pct, 1) + "%, " + fmt(a.groupShareOfManufacturingPct, 1) + "% обработки.</p></div>" +
+        "<div class='node live'><strong>Экспорт «одежда текстильная», январь–ноябрь 2025</strong><p class='small'>" + fmt(exportMln, 1) +
+        " млн долларов, индекс стоимости " + fmt(a.textileClothingExportValueIndex, 1) + " (" + signed(-exportDrop, 1) + "%).</p></div>" +
+        "<div class='node live'><strong>В Россию — это страна, не площадка</strong><p class='small'>Одежда и принадлежности: " + fmt(a.russiaClothingAccessoriesMlnUsd, 1) +
+        " млн долларов. Доли Wildberries и Ozon в бюллетене нет.</p></div>" +
+        "<div class='node live'><strong>Внутри одежды ряды разные</strong><p class='small'>Верхняя мужская " + fmt(a.mensOuterwearThsPcs, 0) +
+        " тыс. шт., индекс " + fmt(a.mensOuterwearIndex, 1) + ". Женская " + fmt(a.womensOuterwearThsPcs, 0) +
+        " тыс. шт., индекс " + fmt(a.womensOuterwearIndex, 1) + ". Нижнее бельё " + fmt(a.underwearThsPcs, 0) +
+        " тыс. шт., индекс " + fmt(a.underwearIndex, 1) + ".</p></div>" +
+      "</details>" +
+      "<p class='eq'>задето, % выпуска = доля канала × доля потерь / 100<br>индекс выпуска = 100 − задето × (100 − покупатель − запас) / 100<br>индекс продаж = 100 − задето × (100 − покупатель) / 100</p>";
     ["apparelChannel", "apparelLoss", "apparelRedirect", "apparelStock"].forEach(function (id) {
       var input = document.getElementById(id);
       input.value = state[id];
@@ -385,6 +400,8 @@
         saveState();
       });
     });
+    document.getElementById("btnApparelExample").addEventListener("click", function () { applyApparel(true); });
+    document.getElementById("btnApparelClear").addEventListener("click", function () { applyApparel(false); });
   }
 
   function markNode(id, mode) {
@@ -432,6 +449,29 @@
     document.getElementById("salesText").textContent = response.salesIndex == null
       ? "Запас в продажи не возвращается."
       : fmt(response.salesIndex, 1) + ". В запас уходит " + fmt(response.inventoryPct, 1) + "% базового выпуска.";
+    var headline = "Ждёт числа";
+    var caption = "индекс выпуска появится, когда четыре числа сойдутся";
+    if (reading.stage === "closed") {
+      headline = fmt(response.outputIndex, 1);
+      caption = "индекс выпуска к физическому объёму 2025 года";
+    } else if (reading.stage === "none") {
+      headline = "100";
+      caption = "индекс выпуска остаётся на уровне 2025 года";
+    } else if (reading.stage === "broken") {
+      headline = "Не сходится";
+    } else if (reading.stage === "split") {
+      headline = "Не считается";
+    }
+    document.getElementById("outputHeadline").textContent = headline;
+    document.getElementById("outputCaption").textContent = caption;
+    var exampleNote = document.getElementById("exampleNote");
+    var sample = M.ILLUSTRATION.apparel;
+    exampleNote.hidden = !(
+      numOrNull(state.apparelChannel) === sample.channelSharePct &&
+      numOrNull(state.apparelLoss) === sample.lossPct &&
+      numOrNull(state.apparelRedirect) === sample.redirectPct &&
+      numOrNull(state.apparelStock) === sample.stockPct
+    );
     document.getElementById("conclusionText").textContent = reading.conclusion;
     document.getElementById("measureList").innerHTML = reading.measures.map(function (item) {
       return "<li>" + esc(item) + "</li>";
@@ -443,39 +483,51 @@
 
   function paintPharma() {
     document.getElementById("pharma").innerHTML =
+      "<div class='split'>" +
+        "<div class='card'><h2>Два числа</h2>" +
+        "<p class='small'>Факт доклада: доля своих лекарств в 2023 году 2,0%, локальная переработка около 6% (середина диапазона 5–7%). Ползунок ниже меняет переработку. Доля на рынке сдвигается только если указано, сколько пунктов доли даёт один пункт переработки.</p>" +
+        "<label for='processing'>Локальная переработка сырья, %</label>" +
+        "<input id='processing' type='range' min='0' max='40' step='0.5'>" +
+        "<p id='processingText'></p>" +
+        "<label for='kInput'>Сколько пунктов доли своих даёт 1 пункт переработки</label>" +
+        "<input id='kInput' type='text' inputmode='decimal' placeholder='неизвестно — оставьте пустым'>" +
+        "<div class='actions'>" +
+          "<button type='button' class='action' id='pharmaExample'>Учебный пример</button>" +
+          "<button type='button' class='action' id='pharmaFact'>Вернуть факт доклада</button>" +
+        "</div>" +
+        "<p class='small' id='pharmaExampleNote'></p>" +
+        "<p class='eq'>сырьё без обработки = 100 − переработка<br>доля своих = 2,0 + коэффициент × (переработка − 6)</p></div>" +
+        "<div class='card answer'><p class='flow-label'>Ответ</p>" +
+        "<p class='kpi' id='pharmaAnswer'>—</p>" +
+        "<p class='small muted'>доля своих готовых лекарств</p>" +
+        "<p id='pharmaAnswerText'></p>" +
+        "<div id='closure' class='callout'></div></div>" +
+      "</div>" +
       "<div class='grid two'><div class='card'><h2>Стоимость выпуска, млн сомов</h2>" +
-      "<p class='small muted'>НСК, открытые данные. Ряд обрывается на 2024 годе.</p><div id='valueBars'></div>" +
+      "<p class='small muted'>Нацстатком. Ряд обрывается на 2024 годе.</p><div id='valueBars'></div>" +
       "<p class='small' id='priceNote'></p>" +
       "<p class='small muted' id='volume2025'></p></div>" +
-      "<div class='card'><h2>Внутренний рынок готовых лекарств</h2>" +
+      "<div class='card'><h2>Рынок готовых лекарств по докладу</h2>" +
       "<p class='small muted'>" + esc(M.FACTS.pharma.finishedExportAssumption) + "</p>" +
       "<table><thead><tr><th></th><th class='num'>2021</th><th class='num'>2023</th></tr></thead><tbody id='marketRows'></tbody></table>" +
       "<p class='small' id='marketNote'></p></div></div>" +
-      "<div class='grid two'><div class='card'><h2>Баланс сырья — тождество</h2>" +
-      "<label for='processing'>Локальная переработка, %</label>" +
-      "<input id='processing' type='range' min='0' max='40' step='0.5'>" +
-      "<p id='processingText'></p><p class='eq'>экспорт без обработки = 100 − локальная переработка</p></div>" +
-      "<div class='card'><h2>Рынок лекарств — поведение</h2>" +
-      "<label for='kInput'>k: пунктов доли рынка на 1 пункт переработки</label>" +
-      "<input id='kInput' type='text' inputmode='decimal' placeholder='нет в данных'>" +
-      "<label for='persistence'>Инерция: какая доля остаётся через шаг</label>" +
+      "<details class='fold'><summary>Проверка для аналитика: балл и новый факт</summary>" +
+      "<div class='card'><h2>Балл важности этот ответ не двигает</h2>" +
+      "<label for='persistence'>Какая доля прошлого уровня остаётся, если ничего не названо</label>" +
       "<input id='persistence' type='range' min='0' max='1' step='0.05'>" +
       "<p class='small' id='behaviorText'></p>" +
-      "<div id='closure' class='callout'></div>" +
-      "<p class='eq'>доля сценария = 2,0 + k × (переработка − 6)</p></div></div>" +
-      "<div class='card'><h2>Балл плана этот прогноз не двигает</h2>" +
-      "<div class='grid two'><div><label for='prod'>Производительность, разрыв №9</label>" +
+      "<div class='grid two'><div><label for='prod'>Производительность, от 1 до 5</label>" +
       "<input id='prod' type='range' min='1' max='5' step='1'></div>" +
-      "<div><label for='res'>Экономия ресурсов</label>" +
+      "<div><label for='res'>Экономия сырья и энергии, от 1 до 5</label>" +
       "<input id='res' type='range' min='1' max='5' step='1'></div></div>" +
       "<p id='scoreText'></p></div>" +
-      "<div class='card'><h2>Новое наблюдение пересчитывает коэффициент</h2>" +
-      "<div class='grid two'><div><label for='factShare'>Факт доли своих, %</label>" +
+      "<div class='card'><h2>Когда придёт новый факт, коэффициент пересчитается</h2>" +
+      "<div class='grid two'><div><label for='factShare'>Новая доля своих, %</label>" +
       "<input id='factShare' type='text' inputmode='decimal' placeholder='ещё нет'></div>" +
-      "<div><label for='factImport'>Факт импорта, млн сомов</label>" +
+      "<div><label for='factImport'>Новый импорт, млн сомов</label>" +
       "<input id='factImport' type='text' inputmode='decimal' placeholder='необязательно'></div></div>" +
       "<div id='errorBlock'></div>" +
-      "<p class='small muted'>Пустые поля — честное состояние: ряда после 2023 года в докладе нет, открытые данные НСК долю рынка лекарств не публикуют в этом наборе.</p></div>";
+      "<p class='small muted'>После 2023 года доли рынка лекарств в этом наборе нет. Пустое поле — честное состояние, не ноль.</p></div></details>";
     ["processing", "persistence", "prod", "res"].forEach(function (id) {
       document.getElementById(id).addEventListener("input", function (event) {
         state[event.target.id === "prod" ? "productivity" : event.target.id === "res" ? "resource" : event.target.id] = event.target.value;
@@ -498,6 +550,8 @@
     document.getElementById("kInput").value = state.k;
     document.getElementById("factShare").value = state.factShare;
     document.getElementById("factImport").value = state.factImport;
+    document.getElementById("pharmaExample").addEventListener("click", function () { applyPharmaExample(true); });
+    document.getElementById("pharmaFact").addEventListener("click", function () { applyPharmaExample(false); });
   }
 
   function fillPharma() {
@@ -533,9 +587,10 @@
         fmt(v, 1) + "</div></div>";
     }).join("");
 
+    var illustrated = processing === M.ILLUSTRATION.pharma.processingNow && k === M.ILLUSTRATION.pharma.k;
     var closure = scenario == null
-      ? "Контур разомкнут: переработка сырья не двигает рынок готовых лекарств, потому что коэффициент k не задан."
-      : "Контур замкнут допущением k = " + fmt(k, 2) + ". Это не оценка по ряду, пока вместо допущения не подставлен факт.";
+      ? "Связь не задана: переработка сырья не двигает долю своих лекарств."
+      : "Связь введена вручную, коэффициент " + fmt(k, 2) + ". Это не оценка по ряду, пока на его месте не окажется факт.";
 
     var errorBlock = "";
     if (err) {
@@ -564,17 +619,27 @@
     document.getElementById("processingText").textContent =
       "Сейчас " + fmt(processing, 1) + "%. Экспорт без обработки " + fmt(exportShare, 1) + "%. " +
       (inFact ? "Это внутри факта доклада 5–7%." : "Это уже сценарий, не факт доклада.");
+    document.getElementById("pharmaAnswer").textContent = fmt(scenario == null ? baseShare : scenario, 1) + "%";
+    document.getElementById("pharmaAnswerText").textContent = scenario == null
+      ? "Доля своих остаётся " + fmt(baseShare, 1) + "%. Ползунок меняет только сырьё: без обработки уходит " +
+        fmt(exportShare, 1) + "%."
+      : (illustrated
+        ? "Учебный расчёт: " + fmt(baseShare, 1) + " + " + fmt(k, 1) + " × (" + fmt(processing, 0) + " − " +
+          fmt(M.FACTS.pharma.localProcessingMid, 0) + "). В прогноз его ставить нельзя, пока коэффициент не взят из нового факта."
+        : "Доля своих при введённом коэффициенте. Это не оценка Нацстаткома, пока коэффициент не подтверждён новым фактом.");
+    document.getElementById("pharmaExampleNote").textContent = illustrated
+      ? "Сейчас в полях учебный пример: переработка 16% и коэффициент 0,2. Это не данные Нацстаткома."
+      : "";
     document.getElementById("behaviorText").textContent =
-      "Инерционная доля " + fmt(inertialShare, 2) + "%. Сценарная доля " +
-      (scenario == null ? "не задана" : fmt(scenario, 2) + "%") + ". При потреблении 2023 года (" +
-      fmt(consumption, 0) + " млн) инерционный импорт " + fmt(inertialMarket.importMln, 0) + " млн" +
-      (scenarioMarket ? ", сценарный импорт " + fmt(scenarioMarket.importMln, 0) + " млн." : ".");
+      "Если ничего нового не названо, доля " + fmt(inertialShare, 2) + "%. При потреблении 2023 года (" +
+      fmt(consumption, 0) + " млн сомов) импорт в этом случае " + fmt(inertialMarket.importMln, 0) + " млн" +
+      (scenarioMarket ? ", при введённом коэффициенте " + fmt(scenarioMarket.importMln, 0) + " млн." : ".");
     var closureNode = document.getElementById("closure");
     closureNode.className = "callout " + (scenario == null ? "crit" : "warn");
     closureNode.textContent = closure;
     document.getElementById("scoreText").textContent =
-      "Балл плана: " + plan + ". Инерционная доля остаётся " + fmt(inertialShare, 2) +
-      "%. Сдвиньте балл — доля не изменится.";
+      "Балл важности: " + plan + ". Доля, если ничего не названо, остаётся " + fmt(inertialShare, 2) +
+      "%. Сдвиньте оба ползунка — доля не изменится.";
     document.getElementById("errorBlock").innerHTML = errorBlock;
   }
 
@@ -582,21 +647,22 @@
     var steps = M.STEPS.map(function (step) {
       return "<li><strong>" + esc(step.title) + ".</strong> " + esc(step.text) + "</li>";
     }).join("");
-    var statusLabel = { missing: "Нет ряда", one_year: "Один год", observed: "Наблюдается" };
+    var statusLabel = { missing: "Без этого расчёт стоит", one_year: "Есть только один год", observed: "Ряд есть" };
     var coeffs = M.COEFFICIENTS.map(function (c) {
       return "<tr><td>" + esc(c.name) + "<div class='small muted'>" + esc(c.closes) + "</div></td>" +
         "<td><span class='tag " + c.status + "'>" + esc(statusLabel[c.status] || c.status) + "</span></td></tr>";
     }).join("");
     document.getElementById("method").innerHTML =
-      "<div class='card callout'><p>Правило допуска в прогноз. Высокий балл плана остаётся общественным критерием. В прогноз он попадает, если инерция уже ведёт в ту же сторону или если назван рычаг и коэффициент. Внешняя цена, общий цикл и доля ВВП прогнозируются своими рядами.</p></div>" +
-      "<div class='card'><h2>Семь шагов</h2><ol class='steps'>" + steps + "</ol></div>" +
-      "<div class='card'><h2>Пропорция стройки 2025 года</h2>" +
+      "<div class='card callout'><p>Прогноз здесь считается двумя способами: повторить последний опубликованный факт или умножить названное изменение на коэффициент. Пустой коэффициент — не ноль. Балл важности темы на его место не ставится.</p></div>" +
+      "<div class='card'><h2>Чего не хватает</h2>" +
+      "<table><thead><tr><th>Какое число нужно</th><th>Состояние</th></tr></thead><tbody>" + coeffs + "</tbody></table></div>" +
+      "<details class='fold'><summary>Если стройка пойдёт другим темпом</summary>" +
+      "<p class='small'>Стройматериалы в 2025 году двигались вместе со стройкой. Ползунок растягивает ту же пропорцию. Один год не доказывает, что так будет всегда.</p>" +
       "<label for='construction'>Объём строительства, % к предыдущему году</label>" +
       "<input id='construction' type='range' min='-10' max='40' step='0.1'>" +
       "<p id='constructionText'></p>" +
-      "<table><thead><tr><th>Технология</th><th class='num'>Факт 2025</th><th class='num'>При этом темпе стройки</th></tr></thead><tbody id='linkedRows'></tbody></table></div>" +
-      "<div class='card'><h2>Реестр коэффициентов</h2>" +
-      "<table><thead><tr><th>Связка</th><th>Состояние</th></tr></thead><tbody>" + coeffs + "</tbody></table></div>" +
+      "<table><thead><tr><th>Технология</th><th class='num'>Факт 2025</th><th class='num'>При этом темпе</th></tr></thead><tbody id='linkedRows'></tbody></table></details>" +
+      "<details class='fold'><summary>Семь правил метода</summary><ol class='steps'>" + steps + "</ol></details>" +
       "<div class='card sources'><h2>Откуда ряды</h2><ul class='small'>" +
       "<li><a href='https://stat.gov.kg/ru/opendata/category/4752/'>ВВП, млн сомов</a> и <a href='https://stat.gov.kg/ru/opendata/category/2314/'>структура по видам деятельности</a></li>" +
       "<li><a href='https://stat.gov.kg/ru/opendata/category/361/'>Объём промышленной продукции</a> и <a href='https://stat.gov.kg/ru/opendata/category/628/'>индексы физического объёма</a></li>" +
