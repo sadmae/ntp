@@ -29,6 +29,6 @@ details[open] > summary { margin-bottom: 12px; }
   .card, .node, .step { background: #fff !important; color: #111 !important; border-color: #bbb !important; break-inside: avoid; }
   .muted, .lead, .eyebrow, .step-label { color: #444 !important; }
   .kpi, h1, h2, h3 { color: #111 !important; }
-  .grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .grid.three { grid-template-columns: 1fr; }
   table.reg th, table.reg td { color: #111 !important; border-color: #bbb !important; }
 }
