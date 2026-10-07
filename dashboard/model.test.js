@@ -233,6 +233,63 @@ test("worked examples are arithmetic only and keep an empty coefficient from mov
   assert.equal(apparel.open.stage, "split");
 });
 
+test("gold export identity splits the goods total and does not move GDP without a coefficient", function () {
+  var y2024 = m.goldSnapshot(2024);
+  var y2025 = m.goldSnapshot(2025);
+  assert.equal(y2024.otherMln, 2416.2);
+  assert.equal(y2025.otherMln, 2157.7);
+  assert.equal(y2024.otherMln, m.OBSERVED.exportExGoldMlnUsd[2024]);
+  assert.equal(y2025.otherMln, m.OBSERVED.exportExGoldMlnUsd[2025]);
+  assert.ok(Math.abs(y2024.goldSharePct - 50.91) < 0.02);
+  assert.ok(Math.abs(y2025.goldSharePct - 24.04) < 0.02);
+  var bridge = m.goldBridge(2024, 2025);
+  assert.equal(bridge.deltaGold, -1823.2);
+  assert.equal(bridge.deltaOther, -258.5);
+  assert.equal(bridge.deltaGoods, -2081.7);
+  assert.ok(Math.abs(bridge.deltaGold + bridge.deltaOther - bridge.deltaGoods) < 1e-9);
+  assert.ok(Math.abs(bridge.goldPartOfGoodsChangePct - 87.58) < 0.02);
+  assert.ok(Math.abs(bridge.levelGoldGrowthPct - bridge.publishedGoldGrowthPct) < 0.1);
+  assert.equal(bridge.publishedGoodsGrowthPct, -44.7);
+  assert.ok(Math.abs(bridge.levelGoodsGrowthPct + 42.3) < 0.05);
+  assert.ok(Math.abs(bridge.levelGoodsGrowthPct - bridge.publishedGoodsGrowthPct) > 2);
+  assert.equal(m.goldScenario(null, 0.01).goodsMln, null);
+  assert.equal(m.goldScenario(null, 0.01).gdpShiftPp, null);
+  var held = m.goldScenario(1000, null);
+  assert.equal(held.gdpShiftPp, null);
+  assert.ok(Math.abs(held.goodsMln - (1000 + 2157.7)) < 1e-9);
+  assert.equal(m.goldScenario(682.9, 0.5).gdpShiftPp, 0);
+  assert.ok(Math.abs(m.goldScenario(1000, 0.01).gdpShiftPp - 3.171) < 1e-9);
+  var gap = m.GAPS.find(function (g) { return g.id === "№2"; });
+  var before = gap.productivity;
+  var first = m.goldScenario(1000, null).goodsMln;
+  gap.productivity = 1;
+  assert.equal(m.goldScenario(1000, null).goodsMln, first);
+  gap.productivity = before;
+});
+
+test("construction volume stays put until a remittance coefficient is named", function () {
+  assert.equal(m.constructionCycleScenario(32.6, null).index, 100);
+  assert.equal(m.constructionCycleScenario(32.6, null).growthPp, null);
+  assert.equal(m.constructionCycleScenario(null, 0.5).growthPp, null);
+  var up = m.constructionCycleScenario(32.6, 0.5);
+  assert.equal(up.growthPp, 5);
+  assert.equal(up.index, 105);
+  assert.equal(m.constructionCycleScenario(22.6, 2).index, 100);
+  var ratio = m.constructionMaterialsRatio();
+  assert.equal(ratio.length, 2);
+  assert.ok(Math.abs(ratio[0].perPoint * 21.1 - 35.7) < 1e-9);
+  assert.ok(Math.abs(ratio[1].perPoint * 21.1 - 30.5) < 1e-9);
+  var parts = m.constructionComponentFacts();
+  assert.equal(parts.length, 4);
+  assert.equal(parts.find(function (row) { return row.process.indexOf("Резина") === 0; }).factPct, 25.9);
+  assert.ok(parts.every(function (row) { return row.factPct !== 35.7; }));
+  var gap = m.GAPS.find(function (g) { return g.id === "№5"; });
+  var score = gap.productivity;
+  gap.productivity = 1;
+  assert.equal(m.constructionCycleScenario(40, 1).index, 100 + (40 - 22.6));
+  gap.productivity = score;
+});
+
 test("coefficient registry keeps the missing behavioral links explicit", function () {
   assert.ok(m.COEFFICIENTS.length >= 8);
   assert.equal(m.STEPS.length, 7);

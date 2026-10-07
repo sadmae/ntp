@@ -16,6 +16,8 @@
     <button type="button" class="tab" data-tab="market">Что произошло</button>
     <button type="button" class="tab" data-tab="sector">Швейка</button>
     <button type="button" class="tab" data-tab="pharma">Лекарства</button>
+    <button type="button" class="tab" data-tab="gold">Золото</button>
+    <button type="button" class="tab" data-tab="build">Стройка</button>
   </nav>
 </header>
 <main>
@@ -37,6 +39,19 @@
         <span class="fact" id="jobPharmaFact"></span>
       </button>
     </div>
+    <p class="flow-label">Два ряда, которые уже можно разложить</p>
+    <div class="jobs two">
+      <button type="button" class="job" data-goto="gold">
+        <span class="step-no">Ряд</span>
+        <strong>Золото и экспорт</strong>
+        <span class="fact" id="jobGoldFact"></span>
+      </button>
+      <button type="button" class="job" data-goto="build">
+        <span class="step-no">Ряд</span>
+        <strong>Стройка и материалы</strong>
+        <span class="fact" id="jobBuildFact"></span>
+      </button>
+    </div>
     <div class="chain legend">
       <div class="node live"><strong>Есть число</strong><p class="small">Из него можно сделать вывод и выбрать меру.</p></div>
       <div class="node wait"><strong>Числа нет</strong><p class="small">Поле остаётся пустым. Это не ноль.</p></div>
@@ -51,6 +66,8 @@
   <section id="market" class="view hidden"></section>
   <section id="sector" class="view hidden"></section>
   <section id="pharma" class="view hidden"></section>
+  <section id="gold" class="view hidden"></section>
+  <section id="build" class="view hidden"></section>
 </main>
 <footer>
   <p>Ряды: Нацстатком, stat.gov.kg, и Национальный банк, nbkr.kg. Доли рынка лекарств и доля сырья без переработки — из аналитического доклада. Суммы, которые страница считает сама, подписаны как следствие. Учебные примеры подписаны отдельно и в прогноз не подставляются.</p>

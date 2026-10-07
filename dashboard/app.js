@@ -17,7 +17,11 @@
       apparelChannel: "",
       apparelLoss: "",
       apparelRedirect: "",
-      apparelStock: ""
+      apparelStock: "",
+      goldNow: "",
+      goldK: "",
+      cycleRemittances: "",
+      cycleK: ""
     };
     try {
       var saved = JSON.parse(localStorage.getItem("ktp_ntp_closed_loop") || "null");
@@ -114,11 +118,15 @@
       paintWorked();
       paintSector();
       paintPharma();
+      paintGold();
+      paintBuild();
       paintMethod();
       painted = true;
     }
     fillSector();
     fillPharma();
+    fillGold();
+    fillBuild();
     fillMethod();
     saveState();
   }
@@ -135,6 +143,14 @@
       "По докладу доля своих " + fmt(M.FACTS.pharma.share2021, 1) + "% → " + fmt(M.FACTS.pharma.share2023, 1) +
       "%. Выпуск 2025 года вырос в " + fmt(o.pharmaVolume2025FactorOfficial, 1) +
       " раза. На долю рынка этот ползунок сам не влияет.";
+    var bridge = M.goldBridge(2024, 2025);
+    document.getElementById("jobGoldFact").textContent =
+      "Экспорт золота " + fmt(bridge.from.goldMln, 1) + " → " + fmt(bridge.to.goldMln, 1) +
+      " млн долларов. На золото пришлось " + fmt(bridge.goldPartOfGoodsChangePct, 1) + "% падения товарного экспорта.";
+    document.getElementById("jobBuildFact").textContent =
+      "Объём стройки в 2025 году " + signed(o.constructionVolumeGrowth2025Pct, 1) +
+      "%. Группа стройматериалов " + signed(o.materialsGrowth2025Pct, 1) +
+      "%. Это один год, коэффициент из него не берётся.";
   }
 
   function renderMarket() {
@@ -676,6 +692,9 @@
     slider.value = state.construction;
     slider.addEventListener("input", function () {
       state.construction = slider.value;
+      var other = document.getElementById("constructionBuild");
+      if (other) other.value = state.construction;
+      fillBuild();
       fillMethod();
       saveState();
     });
@@ -690,6 +709,203 @@
       return "<tr><td>" + esc(row.process) + "<div class='small muted'>" + esc(row.detail) + "</div></td>" +
         "<td class='num'>" + fmt(row.factPct, 1) + "</td><td class='num'>" + fmt(row.scenarioPct, 1) + "</td></tr>";
     }).join("");
+  }
+
+  function paintGold() {
+    document.getElementById("gold").innerHTML =
+      "<div class='split'>" +
+        "<div class='card'><h2>Два года, которые есть в ряде</h2>" +
+        "<p class='small'>Нацбанк, экспорт в млн долларов. «Без золота» — это товарный экспорт минус золото, следствие, не отдельная публикация.</p>" +
+        "<table><thead><tr><th></th><th class='num'>2024</th><th class='num'>2025</th></tr></thead><tbody id='goldRows'></tbody></table>" +
+        "<p class='small' id='goldLevels'></p></div>" +
+        "<div class='card answer'><p class='flow-label'>Что ряд уже объясняет</p>" +
+        "<p class='kpi' id='goldHeadline'>—</p>" +
+        "<p class='small muted' id='goldCaption'></p>" +
+        "<div class='node live' id='goldSplit'><strong>Куда делось падение экспорта</strong><p class='small' id='goldSplitText'></p></div>" +
+        "<div class='node stop'><strong>Добыча — другой ряд</strong><p class='small' id='goldMining'></p></div>" +
+        "<div class='node stop'><strong>ВВП от золота не пересчитывается</strong><p class='small' id='goldGdp'></p></div></div>" +
+      "</div>" +
+      "<div class='card'><h2>Если золото будет другим</h2>" +
+      "<p class='small'>Остальной экспорт держится на последнем факте. Товарный экспорт сдвигается сам: это сумма. Темп ВВП сдвигается только если названо, сколько процентных пунктов даёт один миллион долларов.</p>" +
+      "<div class='grid two'>" +
+        "<div><label for='goldNow'>Экспорт золота, млн долларов</label>" +
+        "<input id='goldNow' type='text' inputmode='decimal' placeholder='пусто — факт 2025 года'></div>" +
+        "<div><label for='goldK'>П.п. темпа ВВП на 1 млн долларов золота</label>" +
+        "<input id='goldK' type='text' inputmode='decimal' placeholder='нет в данных'></div>" +
+      "</div>" +
+      "<p id='goldScenarioText'></p>" +
+      "<p class='small' id='goldGdpText'></p>" +
+      "<button type='button' class='action' id='goldReset'>Вернуть факт</button></div>";
+    ["goldNow", "goldK"].forEach(function (id) {
+      var input = document.getElementById(id);
+      var key = id === "goldNow" ? "goldNow" : "goldK";
+      input.value = state[key];
+      input.addEventListener("input", function () {
+        state[key] = input.value;
+        fillGold();
+        saveState();
+      });
+    });
+    document.getElementById("goldReset").addEventListener("click", function () {
+      state.goldNow = "";
+      state.goldK = "";
+      document.getElementById("goldNow").value = "";
+      document.getElementById("goldK").value = "";
+      fillGold();
+      saveState();
+    });
+  }
+
+  function fillGold() {
+    var o = M.OBSERVED;
+    var bridge = M.goldBridge(2024, 2025);
+    var from = bridge.from;
+    var to = bridge.to;
+    document.getElementById("goldRows").innerHTML =
+      "<tr><td>Золото</td><td class='num'>" + fmt(from.goldMln, 1) + "</td><td class='num'>" + fmt(to.goldMln, 1) + "</td></tr>" +
+      "<tr><td>Без золота, следствие</td><td class='num'>" + fmt(from.otherMln, 1) + "</td><td class='num'>" + fmt(to.otherMln, 1) + "</td></tr>" +
+      "<tr><td>Весь товарный экспорт</td><td class='num'>" + fmt(from.goodsMln, 1) + "</td><td class='num'>" + fmt(to.goodsMln, 1) + "</td></tr>" +
+      "<tr><td>Доля золота, %</td><td class='num'>" + fmt(from.goldSharePct, 1) + "</td><td class='num'>" + fmt(to.goldSharePct, 1) + "</td></tr>";
+    document.getElementById("goldHeadline").textContent = fmt(bridge.goldPartOfGoodsChangePct, 1) + "%";
+    document.getElementById("goldCaption").textContent = "падения товарного экспорта в долларах пришлось на золото";
+    document.getElementById("goldSplitText").textContent =
+      "Золото " + signed(bridge.deltaGold, 1) + " млн, остальной экспорт " + signed(bridge.deltaOther, 1) +
+      " млн, вместе " + signed(bridge.deltaGoods, 1) + " млн. Это арифметика двух уровней, не причина спада внутри страны.";
+    document.getElementById("goldLevels").textContent =
+      "По двум уровням золото изменилось на " + signed(bridge.levelGoldGrowthPct, 1) +
+      "% (опубликованный темп " + signed(bridge.publishedGoldGrowthPct, 1) +
+      "%). Товарный экспорт по этим же уровням " + signed(bridge.levelGoodsGrowthPct, 1) +
+      "%. В ряде Нацбанка темп товарного экспорта указан как " + signed(bridge.publishedGoodsGrowthPct, 1) +
+      "%. Одно число другим не заменяется.";
+    document.getElementById("goldMining").textContent =
+      "Физический объём добычи в 2025 году " + signed(o.miningGrowth2025Pct, 1) +
+      "%. Это не доллары экспорта золота и не подставляется вместо них.";
+    document.getElementById("goldGdp").textContent =
+      "Реальный ВВП " + signed(o.gdpRealGrowthPct[2025], 1) + "%, промышленность " + signed(o.industryVolumeGrowth2025Pct, 1) +
+      "%, курс на конец года " + signed(o.usdKgsEnd2025ChangePct, 1) +
+      "%. Коэффициента «миллион долларов золота → эти ряды» нет. Металлургия — около 62% обработки в докладе за один год, это не ряд экспорта.";
+    var scenario = M.goldScenario(numOrNull(state.goldNow), numOrNull(state.goldK));
+    document.getElementById("goldScenarioText").textContent = scenario.goodsMln == null
+      ? "Товарный экспорт остаётся фактом 2025 года: " + fmt(to.goodsMln, 1) + " млн долларов. Остальной экспорт " + fmt(to.otherMln, 1) + " млн."
+      : "Товарный экспорт станет " + fmt(scenario.goodsMln, 1) + " млн: золото " + fmt(scenario.goldMln, 1) +
+        " плюс остальной экспорт " + fmt(scenario.otherMln, 1) + ". Доля золота " + fmt(scenario.goldSharePct, 1) +
+        "%. Сдвиг золота к факту 2025 года: " + signed(scenario.deltaGold, 1) + " млн.";
+    document.getElementById("goldGdpText").textContent = scenario.gdpShiftPp == null
+      ? "Сдвиг темпа ВВП не считается: коэффициент пуст. Пустое поле — не ноль."
+      : "При введённом коэффициенте сдвиг темпа ВВП " + signed(scenario.gdpShiftPp, 2) +
+        " п.п. Это не оценка Нацбанка и не продолжение темпа " + signed(o.gdpRealGrowthPct[2025], 1) + "%.";
+  }
+
+  function paintBuild() {
+    document.getElementById("build").innerHTML =
+      "<div class='split'>" +
+        "<div class='card'><h2>Что видно по циклу в 2025 году</h2>" +
+        "<p class='small'>Числа одного года стоят рядом. Из одного года коэффициент «переводы → стройка» не оценивается.</p>" +
+        "<div class='node live'><strong>Переводы</strong><p class='small' id='cycleRemit'></p></div>" +
+        "<div class='node live'><strong>Зарплата и торговля</strong><p class='small' id='cycleWage'></p></div>" +
+        "<div class='node live'><strong>Средства населения в инвестициях</strong><p class='small' id='cycleHouseholds'></p></div>" +
+        "<div class='node stop'><strong>Бюджет — отдельное решение</strong><p class='small' id='cycleBudget'></p></div>" +
+        "<div class='node live'><strong>Объём стройки</strong><p class='small' id='cycleVolume'></p></div>" +
+        "<p class='small' id='cycleShare'></p></div>" +
+        "<div class='card answer'><p class='flow-label'>Индекс объёма стройки</p>" +
+        "<p class='kpi' id='cycleHeadline'>100</p>" +
+        "<p class='small muted' id='cycleCaption'></p>" +
+        "<p id='cycleAnswer'></p>" +
+        "<label for='cycleRemittances'>Темп переводов, %</label>" +
+        "<input id='cycleRemittances' type='text' inputmode='decimal' placeholder='пусто — объём не двигается'>" +
+        "<label for='cycleK'>П.п. объёма стройки на 1 п.п. темпа переводов</label>" +
+        "<input id='cycleK' type='text' inputmode='decimal' placeholder='нет в данных'>" +
+        "<p class='small'>База коэффициента — темп переводов 2025 года. Индекс 100 — это последний физический объём, не повтор +21,1%.</p></div>" +
+      "</div>" +
+      "<div class='split'>" +
+        "<div class='card'><h2>Стройматериалы едут за темпом стройки</h2>" +
+        "<p class='small'>Пропорция 2025 года: темп группы делится на темп стройки. Один год — не закон. Резина отдельно и группа «резина, пластмасса и стройматериалы» — разные строки.</p>" +
+        "<label for='constructionBuild'>Объём строительства, % к предыдущему году</label>" +
+        "<input id='constructionBuild' type='range' min='-10' max='40' step='0.1'>" +
+        "<p id='materialsNote'></p>" +
+        "<table><thead><tr><th>Строка</th><th class='num'>Факт 2025</th><th class='num'>При этом темпе</th></tr></thead><tbody id='materialsRows'></tbody></table></div>" +
+        "<div class='card answer'><p class='flow-label'>Группа материалов</p>" +
+        "<p class='kpi' id='materialsHeadline'>—</p>" +
+        "<p class='small muted'>резина, пластмасса и стройматериалы, %</p>" +
+        "<p id='materialsRatio'></p>" +
+        "<div class='node live'><strong>Рядом, но это не та же строка</strong><ul class='small' id='materialsParts'></ul></div></div>" +
+      "</div>";
+    document.getElementById("constructionBuild").value = state.construction;
+    document.getElementById("constructionBuild").addEventListener("input", function (event) {
+      state.construction = event.target.value;
+      var other = document.getElementById("construction");
+      if (other) other.value = state.construction;
+      fillBuild();
+      fillMethod();
+      saveState();
+    });
+    ["cycleRemittances", "cycleK"].forEach(function (id) {
+      var input = document.getElementById(id);
+      input.value = state[id];
+      input.addEventListener("input", function () {
+        state[id] = input.value;
+        fillBuild();
+        saveState();
+      });
+    });
+  }
+
+  function fillBuild() {
+    var o = M.OBSERVED;
+    var household = M.sourceGrowth("households", 2024, 2025);
+    var budget = M.sourceGrowth("republicanBudget", 2024, 2025);
+    var cycle = M.constructionCycleScenario(numOrNull(state.cycleRemittances), numOrNull(state.cycleK));
+    var growth = Number(state.construction);
+    var linked = M.constructionProportion(growth);
+    var ratio = M.constructionMaterialsRatio();
+    var linkedNames = {};
+    o.linkedToConstruction.forEach(function (row) { linkedNames[row.process] = true; });
+    var parts = M.constructionComponentFacts().filter(function (row) { return !linkedNames[row.process]; });
+    var va2021 = M.nominalVa(2021, "construction") / 1000;
+    var va2025 = M.nominalVa(2025, "construction") / 1000;
+    document.getElementById("cycleRemit").textContent =
+      fmt(o.remittancesNetMlnUsd[2025], 1) + " млн долларов, " + signed(o.remittancesGrowthPct[2025], 1) + "% к 2024.";
+    document.getElementById("cycleWage").textContent =
+      "Реальная зарплата " + signed(o.realWageGrowth2025Pct, 1) + "%. Оборот торговли " + signed(o.tradeVolumeGrowth2025Pct, 1) + "%.";
+    document.getElementById("cycleHouseholds").textContent =
+      signed(household, 1) + "% к 2024 году. Это деньги семей в инвестициях, не объём стройки.";
+    document.getElementById("cycleBudget").textContent =
+      "Республиканский бюджет в инвестициях " + signed(budget, 0) +
+      "% к 2024. Коэффициента к физическому объёму стройки нет, поэтому бюджет индекс не двигает.";
+    document.getElementById("cycleVolume").textContent =
+      signed(o.constructionVolumeGrowth2025Pct, 1) + "% к 2024. Стоимость продукции " + fmt(o.constructionValue2025Mln / 1000, 1) + " млрд сомов.";
+    document.getElementById("cycleShare").textContent =
+      "Доля стройки в ВВП " + fmt(o.gdpShares.construction[2021], 1) + "% → " + fmt(o.gdpShares.construction[2025], 1) +
+      "%. Номинальная добавленная стоимость, следствие доли и ВВП: " + fmt(va2021, 1) + " → " + fmt(va2025, 1) +
+      " млрд сомов. Физического объёма за 2021–2024 год в этом наборе нет, поэтому доля объёмом не считается.";
+    document.getElementById("cycleHeadline").textContent = fmt(cycle.index, 1);
+    document.getElementById("cycleCaption").textContent = cycle.growthPp == null
+      ? "последний физический объём. Темп " + signed(o.constructionVolumeGrowth2025Pct, 1) + "% дальше сам не идёт."
+      : "учебный сдвиг от темпа переводов. Это не оценка по ряду.";
+    document.getElementById("cycleAnswer").textContent = cycle.growthPp == null
+      ? "Индекс остаётся 100. Переводы, зарплата и бюджет сами объём не двигают, пока не назван коэффициент."
+      : "Темп к уровню 2025 года: " + signed(cycle.growthPp, 1) +
+        " п.п. Коэффициент введён вручную. Балл важности стройки в эту формулу не входит.";
+    var group = linked[0];
+    document.getElementById("materialsHeadline").textContent = fmt(group.scenarioPct, 1) + "%";
+    document.getElementById("materialsNote").textContent =
+      "Сейчас темп стройки " + fmt(growth, 1) + "%. Факт Нацстаткома — " + fmt(o.constructionVolumeGrowth2025Pct, 1) +
+      "%." + (Math.abs(growth - o.constructionVolumeGrowth2025Pct) < 0.05
+        ? " Таблица повторяет 2025 год."
+        : " Строки растянуты пропорцией 2025 года. На следующий год она сама не переносится.");
+    document.getElementById("materialsRows").innerHTML = linked.map(function (row) {
+      return "<tr><td>" + esc(row.process) + "</td><td class='num'>" + fmt(row.factPct, 1) +
+        "</td><td class='num'>" + fmt(row.scenarioPct, 1) + "</td></tr>";
+    }).join("");
+    document.getElementById("materialsRatio").textContent =
+      "На один пункт стройки в 2025 году пришлось " + fmt(ratio[0].perPoint, 2) +
+      " пункта группы материалов и " + fmt(ratio[1].perPoint, 2) +
+      " пункта дерева и бумаги. Пока коэффициент строительного цикла пуст, из переводов эти темпы не выводятся.";
+    document.getElementById("materialsParts").innerHTML = parts.map(function (row) {
+      return "<li>" + esc(row.process) + ": " + signed(row.factPct, 1) + "%. Факт 2025 года, в пропорцию группы не входит.</li>";
+    }).join("");
+    var methodSlider = document.getElementById("construction");
+    if (methodSlider && methodSlider.value !== String(state.construction)) methodSlider.value = state.construction;
   }
 
   render();

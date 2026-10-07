@@ -703,6 +703,94 @@
     };
   }
 
+  // Goods export = gold + the rest. Two published levels, 2024 and 2025.
+  // The dollar split is an identity. It is not a coefficient to GDP or to mining volume.
+  function goldSnapshot(year) {
+    var gold = OBSERVED.goldExportMlnUsd[year];
+    var goods = OBSERVED.goodsExportMlnUsd[year];
+    if (gold == null || goods == null) return null;
+    return {
+      year: year,
+      goldMln: gold,
+      goodsMln: goods,
+      otherMln: round(goods - gold, 1),
+      goldSharePct: goods === 0 ? null : gold / goods * 100
+    };
+  }
+
+  function goldBridge(fromYear, toYear) {
+    var from = goldSnapshot(fromYear);
+    var to = goldSnapshot(toYear);
+    var deltaGold = round(to.goldMln - from.goldMln, 1);
+    var deltaOther = round(to.otherMln - from.otherMln, 1);
+    var deltaGoods = round(to.goodsMln - from.goodsMln, 1);
+    return {
+      from: from,
+      to: to,
+      deltaGold: deltaGold,
+      deltaOther: deltaOther,
+      deltaGoods: deltaGoods,
+      goldPartOfGoodsChangePct: deltaGoods === 0 ? null : deltaGold / deltaGoods * 100,
+      levelGoldGrowthPct: from.goldMln === 0 ? null : (to.goldMln / from.goldMln - 1) * 100,
+      levelGoodsGrowthPct: from.goodsMln === 0 ? null : (to.goodsMln / from.goodsMln - 1) * 100,
+      publishedGoldGrowthPct: OBSERVED.goldExportGrowth2025Pct,
+      publishedGoodsGrowthPct: OBSERVED.goodsExportGrowth2025Pct
+    };
+  }
+
+  // Holds non-gold exports at the last fact. GDP stays empty until k is named.
+  // k is percentage points of real GDP growth per 1 mln USD of gold versus the 2025 level.
+  // The result is that shift only. The +11.1% of 2025 is not copied forward.
+  function goldScenario(goldNowMln, kGdpPerMln) {
+    var base = goldSnapshot(2025);
+    var other = base.otherMln;
+    if (typeof goldNowMln !== "number" || !isFinite(goldNowMln)) {
+      return { goldMln: null, otherMln: other, goodsMln: null, deltaGold: null, goldSharePct: null, gdpShiftPp: null };
+    }
+    var delta = goldNowMln - base.goldMln;
+    var goods = goldNowMln + other;
+    var k = typeof kGdpPerMln === "number" && isFinite(kGdpPerMln) ? kGdpPerMln : null;
+    return {
+      goldMln: goldNowMln,
+      otherMln: other,
+      goodsMln: goods,
+      deltaGold: delta,
+      goldSharePct: goods === 0 ? null : goldNowMln / goods * 100,
+      gdpShiftPp: k == null ? null : k * delta
+    };
+  }
+
+  // Last construction volume stays at 100. A new remittance rate does nothing until k is named.
+  // k is percentage points of construction volume per 1 percentage point of remittance growth versus 2025.
+  function constructionCycleScenario(remittanceGrowthNow, kVolumePerPoint) {
+    var base = OBSERVED.remittancesGrowthPct[2025];
+    var named = typeof remittanceGrowthNow === "number" && isFinite(remittanceGrowthNow) &&
+      typeof kVolumePerPoint === "number" && isFinite(kVolumePerPoint);
+    if (!named) return { growthPp: null, index: 100, remittanceBase: base };
+    var growth = kVolumePerPoint * (remittanceGrowthNow - base);
+    return { growthPp: growth, index: 100 + growth, remittanceBase: base };
+  }
+
+  function constructionMaterialsRatio() {
+    var base = OBSERVED.constructionVolumeGrowth2025Pct;
+    return OBSERVED.linkedToConstruction.map(function (row) {
+      return {
+        process: row.process,
+        factPct: row.growth2025,
+        perPoint: base === 0 ? null : row.growth2025 / base,
+        detail: row.detail
+      };
+    });
+  }
+
+  function constructionComponentFacts() {
+    return FACTS.technologies.filter(function (row) {
+      return row.driver === "construction";
+    }).map(function (row) {
+      return { process: row.process, factPct: row.growthPct, note: row.note };
+    });
+  }
+
   function workedApparel() {
     var input = ILLUSTRATION.apparel;
     return {
@@ -870,6 +958,12 @@
     sourceGrowth: sourceGrowth,
     activityShare: activityShare,
     constructionProportion: constructionProportion,
+    goldSnapshot: goldSnapshot,
+    goldBridge: goldBridge,
+    goldScenario: goldScenario,
+    constructionCycleScenario: constructionCycleScenario,
+    constructionMaterialsRatio: constructionMaterialsRatio,
+    constructionComponentFacts: constructionComponentFacts,
     legacyTechnologyBars: legacyTechnologyBars,
     sectorResponse: sectorResponse,
     sectorReading: sectorReading,
