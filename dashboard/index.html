@@ -18,6 +18,7 @@
     <button type="button" class="tab" data-tab="pharma">Лекарства</button>
     <button type="button" class="tab" data-tab="gold">Золото</button>
     <button type="button" class="tab" data-tab="build">Стройка</button>
+    <button type="button" class="tab" data-tab="season">Сезон</button>
   </nav>
 </header>
 <main>
@@ -39,8 +40,8 @@
         <span class="fact" id="jobPharmaFact"></span>
       </button>
     </div>
-    <p class="flow-label">Два ряда, которые уже можно разложить</p>
-    <div class="jobs two">
+    <p class="flow-label">Ряды и одна политика</p>
+    <div class="jobs">
       <button type="button" class="job" data-goto="gold">
         <span class="step-no">Ряд</span>
         <strong>Золото и экспорт</strong>
@@ -50,6 +51,11 @@
         <span class="step-no">Ряд</span>
         <strong>Стройка и материалы</strong>
         <span class="fact" id="jobBuildFact"></span>
+      </button>
+      <button type="button" class="job" data-goto="season">
+        <span class="step-no">Политика</span>
+        <strong>Сезон и запреты</strong>
+        <span class="fact" id="jobSeasonFact"></span>
       </button>
     </div>
     <div class="chain legend">
@@ -68,6 +74,7 @@
   <section id="pharma" class="view hidden"></section>
   <section id="gold" class="view hidden"></section>
   <section id="build" class="view hidden"></section>
+  <section id="season" class="view hidden"></section>
 </main>
 <footer>
   <p>Ряды: Нацстатком, stat.gov.kg, и Национальный банк, nbkr.kg. Доли рынка лекарств и доля сырья без переработки — из аналитического доклада. Суммы, которые страница считает сама, подписаны как следствие. Учебные примеры подписаны отдельно и в прогноз не подставляются.</p>

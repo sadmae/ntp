@@ -290,6 +290,67 @@ test("construction volume stays put until a remittance coefficient is named", fu
   gap.productivity = score;
 });
 
+test("a seasonal ban does not assign the harvest or a som price without a named holder", function () {
+  var sample = m.SEASON_ILLUSTRATION;
+  assert.equal(sample.eatNow + sample.farmerStore + sample.intermediary + sample.exportOpen, 100);
+  assert.equal(m.seasonBalance({}).priceSom, null);
+  assert.equal(m.seasonBalance({}).ready, false);
+  var open = m.seasonReading({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 20, importOpen: 25, lossPct: 10, farmerAbsorb: 0
+  });
+  assert.equal(open.stage, "open");
+  assert.equal(open.balance.leanSupply, 61);
+  assert.equal(open.balance.harvestMarket, 70);
+  assert.equal(open.balance.priceSom, null);
+  var blocked = m.seasonBalance({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 20, importOpen: 25, lossPct: 10,
+    exportBan: true
+  });
+  assert.equal(blocked.leanSupply, null);
+  assert.equal(blocked.blocked, 20);
+  assert.equal(m.seasonReading({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 20, importOpen: 25, lossPct: 10,
+    exportBan: true
+  }).stage, "blocked");
+  var exportBan = m.seasonBalance({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 20, importOpen: 25, lossPct: 10,
+    farmerAbsorb: 0, exportBan: true
+  });
+  assert.equal(exportBan.intermediaryHeld, 50);
+  assert.equal(exportBan.harvestMarket, 90);
+  assert.equal(exportBan.leanSupply, 79);
+  var importBan = m.seasonBalance({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 20, importOpen: 25, lossPct: 10,
+    farmerAbsorb: 0, importBan: true
+  });
+  assert.equal(importBan.imports, 0);
+  assert.equal(importBan.leanSupply, 36);
+  var both = m.seasonBalance({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 20, importOpen: 25, lossPct: 10,
+    farmerAbsorb: 0, exportBan: true, importBan: true
+  });
+  assert.equal(both.leanSupply, 54);
+  assert.equal(both.intermediaryHeld, 50);
+  assert.equal(both.farmerHeld, 10);
+  var farmerKeeps = m.seasonBalance({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 20, importOpen: 25, lossPct: 10,
+    farmerAbsorb: 100, exportBan: true
+  });
+  assert.equal(farmerKeeps.farmerHeld, 30);
+  assert.equal(farmerKeeps.intermediaryHeld, 30);
+  assert.equal(farmerKeeps.leanSupply, 79);
+  assert.equal(m.seasonBalance({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 30, importOpen: 25, lossPct: 10
+  }).consistent, false);
+  var gap = m.GAPS.find(function (g) { return g.id === "№5"; });
+  var score = gap.productivity;
+  gap.productivity = 1;
+  assert.equal(m.seasonBalance({
+    eatNow: 40, farmerStore: 10, intermediary: 30, exportOpen: 20, importOpen: 25, lossPct: 10, farmerAbsorb: 0
+  }).leanSupply, 61);
+  gap.productivity = score;
+});
+
 test("coefficient registry keeps the missing behavioral links explicit", function () {
   assert.ok(m.COEFFICIENTS.length >= 8);
   assert.equal(m.STEPS.length, 7);

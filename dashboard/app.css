@@ -80,6 +80,8 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .bar-track { flex: 1; background: var(--panel2); border-radius: 6px; height: 16px; overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 6px; }
 label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+label.check { display: flex; align-items: center; gap: 8px; color: var(--text); }
+label.check input { width: auto; margin: 0; }
 input[type="range"] { width: 100%; }
 input[type="number"], input[type="text"] {
   width: 100%;

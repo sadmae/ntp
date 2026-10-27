@@ -21,7 +21,16 @@
       goldNow: "",
       goldK: "",
       cycleRemittances: "",
-      cycleK: ""
+      cycleK: "",
+      seasonEat: "",
+      seasonFarmer: "",
+      seasonMid: "",
+      seasonExport: "",
+      seasonImport: "",
+      seasonLoss: "",
+      seasonAbsorb: "",
+      seasonExportBan: "",
+      seasonImportBan: ""
     };
     try {
       var saved = JSON.parse(localStorage.getItem("ktp_ntp_closed_loop") || "null");
@@ -120,6 +129,7 @@
       paintPharma();
       paintGold();
       paintBuild();
+      paintSeason();
       paintMethod();
       painted = true;
     }
@@ -127,6 +137,7 @@
     fillPharma();
     fillGold();
     fillBuild();
+    fillSeason();
     fillMethod();
     saveState();
   }
@@ -151,6 +162,8 @@
       "Объём стройки в 2025 году " + signed(o.constructionVolumeGrowth2025Pct, 1) +
       "%. Группа стройматериалов " + signed(o.materialsGrowth2025Pct, 1) +
       "%. Это один год, коэффициент из него не берётся.";
+    document.getElementById("jobSeasonFact").textContent =
+      "Осенью урожай дешевеет, к дефициту дорожает. Полугодовой запрет часто отдаёт эту разницу посреднику.";
   }
 
   function renderMarket() {
@@ -918,6 +931,143 @@
     }).join("");
     var methodSlider = document.getElementById("construction");
     if (methodSlider && methodSlider.value !== String(state.construction)) methodSlider.value = state.construction;
+  }
+
+  function seasonInput() {
+    return {
+      eatNow: numOrNull(state.seasonEat),
+      farmerStore: numOrNull(state.seasonFarmer),
+      intermediary: numOrNull(state.seasonMid),
+      exportOpen: numOrNull(state.seasonExport),
+      importOpen: numOrNull(state.seasonImport),
+      lossPct: numOrNull(state.seasonLoss),
+      farmerAbsorb: numOrNull(state.seasonAbsorb),
+      exportBan: state.seasonExportBan === "1",
+      importBan: state.seasonImportBan === "1"
+    };
+  }
+
+  function paintSeason() {
+    document.getElementById("season").innerHTML =
+      "<div class='card'><h2>Запрет на полгода бьёт не туда</h2>" +
+      "<p>Описание проблемы верное. Осенью товара много, цена падает. Фермер без склада продаёт почти всё. Посредник, у которого есть склад и деньги, забирает объём. К дефициту этот запас и новый импорт продаются дороже. Население платит сезонную разницу.</p>" +
+      "<p>Полугодовой запрет импорта и запрет экспорта эту разницу чаще увеличивают. Запрет импорта в дефицит убирает еду и защищает уже собранный склад. Запрет экспорта в урожай оставляет товар в стране, но если фермер не может хранить больше, его покупает тот же посредник, только дешевле.</p>" +
+      "<p class='small'>Цифры ниже — учебный пример на 100 единиц урожая, не данные Нацстаткома. Цена в сомах не считается: нет числа, на сколько сомов цена падает от лишней единицы товара. Потери хранения в примере 10%.</p></div>" +
+      "<div class='split'>" +
+        "<div class='card'><h2>Куда делся урожай</h2>" +
+        "<label for='seasonEat'>Сразу на стол, % урожая</label><input id='seasonEat' type='text' inputmode='decimal'>" +
+        "<label for='seasonFarmer'>Склад фермера, % урожая</label><input id='seasonFarmer' type='text' inputmode='decimal'>" +
+        "<label for='seasonMid'>Склад посредника, % урожая</label><input id='seasonMid' type='text' inputmode='decimal'>" +
+        "<label for='seasonExport'>Экспорт, если он открыт, % урожая</label><input id='seasonExport' type='text' inputmode='decimal'>" +
+        "<label for='seasonImport'>Импорт в межсезонье, если он открыт, % урожая</label><input id='seasonImport' type='text' inputmode='decimal'>" +
+        "<label for='seasonLoss'>Потери на складе, %</label><input id='seasonLoss' type='text' inputmode='decimal'>" +
+        "<label class='check'><input id='seasonExportBan' type='checkbox'> Запрет экспорта</label>" +
+        "<label class='check'><input id='seasonImportBan' type='checkbox'> Запрет импорта</label>" +
+        "<label for='seasonAbsorb'>Какую долю запрещённого экспорта фермер удержит сам, %</label>" +
+        "<input id='seasonAbsorb' type='text' inputmode='decimal' placeholder='не названо — не ноль'>" +
+        "<div class='actions'>" +
+          "<button type='button' class='action' id='seasonExample'>Учебный пример</button>" +
+          "<button type='button' class='action' id='seasonClear'>Очистить</button>" +
+        "</div>" +
+        "<p class='small' id='seasonBanner'></p></div>" +
+        "<div class='card answer'><p class='flow-label'>Что из этого следует</p>" +
+        "<div class='node' id='nodeHarvest'><strong>Осенний рынок</strong><p class='kpi' id='seasonHarvest'>—</p><p class='small'>стол сейчас плюс закупка посредника</p></div>" +
+        "<div class='node' id='nodeFarmerLean'><strong>К дефициту у фермера</strong><p class='small' id='seasonFarmerLean'></p></div>" +
+        "<div class='node' id='nodeMidLean'><strong>К дефициту у посредника</strong><p class='small' id='seasonMidLean'></p></div>" +
+        "<div class='node' id='nodeImports'><strong>Импорт в межсезонье</strong><p class='small' id='seasonImports'></p></div>" +
+        "<div class='node' id='nodeLean'><strong>Еда в межсезонье</strong><p class='kpi' id='seasonLean'>—</p></div>" +
+        "<div class='node stop'><strong>Цена в сомах</strong><p class='small' id='seasonPrice'>Не считается. Нет числа, на сколько цена меняется от лишней единицы.</p></div>" +
+        "<div class='node' id='nodeSeasonConclusion'><strong>Вывод</strong><p class='small' id='seasonConclusion'></p></div>" +
+        "<div class='node' id='nodeSeasonMeasures'><strong>Что делать</strong><ul class='small' id='seasonMeasures'></ul></div></div>" +
+      "</div>";
+    ["seasonEat", "seasonFarmer", "seasonMid", "seasonExport", "seasonImport", "seasonLoss", "seasonAbsorb"].forEach(function (id) {
+      var input = document.getElementById(id);
+      input.value = state[id];
+      input.addEventListener("input", function () {
+        state[id] = input.value;
+        fillSeason();
+        saveState();
+      });
+    });
+    ["seasonExportBan", "seasonImportBan"].forEach(function (id) {
+      var input = document.getElementById(id);
+      input.checked = state[id] === "1";
+      input.addEventListener("change", function () {
+        state[id] = input.checked ? "1" : "";
+        fillSeason();
+        saveState();
+      });
+    });
+    document.getElementById("seasonExample").addEventListener("click", function () { applySeasonExample(); });
+    document.getElementById("seasonClear").addEventListener("click", function () { applySeasonExample(true); });
+    if (!state.seasonEat && !state.seasonFarmer && !state.seasonMid && !state.seasonExport) applySeasonExample();
+  }
+
+  function applySeasonExample(clear) {
+    var sample = M.SEASON_ILLUSTRATION;
+    var values = clear ? {
+      seasonEat: "", seasonFarmer: "", seasonMid: "", seasonExport: "", seasonImport: "", seasonLoss: "", seasonAbsorb: ""
+    } : {
+      seasonEat: String(sample.eatNow),
+      seasonFarmer: String(sample.farmerStore),
+      seasonMid: String(sample.intermediary),
+      seasonExport: String(sample.exportOpen),
+      seasonImport: String(sample.importOpen),
+      seasonLoss: String(sample.lossPct),
+      seasonAbsorb: String(sample.farmerAbsorb)
+    };
+    Object.keys(values).forEach(function (id) {
+      state[id] = values[id];
+      var input = document.getElementById(id);
+      if (input) input.value = values[id];
+    });
+    state.seasonExportBan = "";
+    state.seasonImportBan = "";
+    ["seasonExportBan", "seasonImportBan"].forEach(function (id) {
+      var input = document.getElementById(id);
+      if (input) input.checked = state[id] === "1";
+    });
+    fillSeason();
+    saveState();
+  }
+
+  function fillSeason() {
+    var reading = M.seasonReading(seasonInput());
+    var balance = reading.balance;
+    function blank(value, digits, suffix) {
+      return value == null ? "не считается" : fmt(value, digits) + (suffix || "");
+    }
+    document.getElementById("seasonHarvest").textContent = blank(balance.harvestMarket, 1);
+    document.getElementById("seasonFarmerLean").textContent = balance.farmerLean == null
+      ? "не считается"
+      : fmt(balance.farmerLean, 1) + " после потерь. Фермер встречает дорогую цену только этой долей.";
+    document.getElementById("seasonMidLean").textContent = blank(balance.intermediaryLean, 1, " после потерь");
+    document.getElementById("seasonImports").textContent = balance.imports == null
+      ? "не считается"
+      : (balance.importBan ? "0. Запрет убрал " + fmt(balance.importOpen, 1) + "." : fmt(balance.imports, 1) + ". Ввоз открыт.");
+    document.getElementById("seasonLean").textContent = blank(balance.leanSupply, 1);
+    document.getElementById("seasonConclusion").textContent = reading.conclusion;
+    document.getElementById("seasonMeasures").innerHTML = reading.measures.map(function (item) {
+      return "<li>" + esc(item) + "</li>";
+    }).join("");
+    var example = M.SEASON_ILLUSTRATION;
+    var showing = numOrNull(state.seasonEat) === example.eatNow &&
+      numOrNull(state.seasonFarmer) === example.farmerStore &&
+      numOrNull(state.seasonMid) === example.intermediary &&
+      numOrNull(state.seasonExport) === example.exportOpen;
+    document.getElementById("seasonBanner").textContent = showing
+      ? "Сейчас учебный пример: 40 на стол, 10 склад фермера, 30 склад посредника, 20 экспорт, 25 импорт, потери 10. Это не факт."
+      : "";
+    ["nodeHarvest", "nodeFarmerLean", "nodeMidLean", "nodeImports", "nodeLean", "nodeSeasonConclusion"].forEach(function (id) {
+      document.getElementById(id).classList.remove("live", "wait", "stop");
+    });
+    var mode = !balance.ready ? "wait" : (!balance.consistent || reading.stage === "blocked" ? "stop" : "live");
+    document.getElementById("nodeSeasonConclusion").classList.add(mode);
+    document.getElementById("nodeHarvest").classList.add(balance.harvestMarket == null ? "wait" : "live");
+    document.getElementById("nodeFarmerLean").classList.add(balance.farmerLean == null ? "wait" : "live");
+    document.getElementById("nodeMidLean").classList.add(balance.intermediaryLean == null ? "wait" : "live");
+    document.getElementById("nodeImports").classList.add(balance.imports == null ? "wait" : (balance.importBan ? "stop" : "live"));
+    document.getElementById("nodeLean").classList.add(balance.leanSupply == null ? "wait" : "live");
   }
 
   render();

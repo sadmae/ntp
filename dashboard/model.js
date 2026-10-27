@@ -791,6 +791,153 @@
     });
   }
 
+  // Shares of one harvest, which is 100. Prices in som are not in this set.
+  // A border ban does not say who keeps the crop the farmer cannot store.
+  var SEASON_ILLUSTRATION = {
+    eatNow: 40,
+    farmerStore: 10,
+    intermediary: 30,
+    exportOpen: 20,
+    importOpen: 25,
+    lossPct: 10,
+    farmerAbsorb: 0
+  };
+
+  function seasonUnit(value) {
+    if (typeof value !== "number" || !isFinite(value) || value < 0 || value > 100) return null;
+    return value;
+  }
+
+  function seasonBalance(input) {
+    input = input || {};
+    var eat = seasonUnit(input.eatNow);
+    var farmer = seasonUnit(input.farmerStore);
+    var mid = seasonUnit(input.intermediary);
+    var exp = seasonUnit(input.exportOpen);
+    var imp = seasonUnit(input.importOpen);
+    var loss = seasonUnit(input.lossPct);
+    var absorb = seasonUnit(input.farmerAbsorb);
+    var exportBan = !!input.exportBan;
+    var importBan = !!input.importBan;
+    var balance = {
+      exportBan: exportBan,
+      importBan: importBan,
+      ready: false,
+      consistent: null,
+      sum: null,
+      blocked: null,
+      exportActual: null,
+      farmerKeptExtra: null,
+      intermediaryExtra: null,
+      farmerHeld: null,
+      intermediaryHeld: null,
+      harvestMarket: null,
+      farmerLean: null,
+      intermediaryLean: null,
+      importOpen: null,
+      imports: null,
+      leanSupply: null,
+      priceSom: null
+    };
+    if (eat == null || farmer == null || mid == null || exp == null || imp == null || loss == null) return balance;
+    var sum = eat + farmer + mid + exp;
+    balance.ready = true;
+    balance.sum = sum;
+    balance.importOpen = imp;
+    if (Math.abs(sum - 100) > 0.05) {
+      balance.consistent = false;
+      return balance;
+    }
+    balance.consistent = true;
+    var blocked = exportBan ? exp : 0;
+    balance.blocked = blocked;
+    balance.exportActual = exportBan ? 0 : exp;
+    balance.imports = importBan ? 0 : imp;
+    var keep = 1 - loss / 100;
+    if (exportBan && absorb == null) {
+      balance.farmerHeld = farmer;
+      balance.farmerLean = round(farmer * keep, 1);
+      return balance;
+    }
+    var absorbPct = exportBan ? absorb : 0;
+    var farmerExtra = blocked * absorbPct / 100;
+    var midExtra = blocked - farmerExtra;
+    balance.farmerKeptExtra = round(farmerExtra, 1);
+    balance.intermediaryExtra = round(midExtra, 1);
+    balance.farmerHeld = round(farmer + farmerExtra, 1);
+    balance.intermediaryHeld = round(mid + midExtra, 1);
+    balance.harvestMarket = round(eat + balance.intermediaryHeld, 1);
+    balance.farmerLean = round(balance.farmerHeld * keep, 1);
+    balance.intermediaryLean = round(balance.intermediaryHeld * keep, 1);
+    balance.leanSupply = round(balance.farmerLean + balance.intermediaryLean + balance.imports, 1);
+    return balance;
+  }
+
+  function seasonReading(input) {
+    var balance = seasonBalance(input || {});
+    var reading = { balance: balance, stage: "empty", conclusion: "", measures: [] };
+    if (!balance.ready) {
+      reading.conclusion = "Вывод о сезоне не следует: не названо, куда делся урожай.";
+      reading.measures = ["Разложить урожай на стол сейчас, склад фермера, склад посредника и экспорт. Пока доли нет, цена в сомах не считается."];
+      return reading;
+    }
+    if (!balance.consistent) {
+      reading.stage = "broken";
+      reading.conclusion = "Раскладка не сходится: четыре доли урожая должны дать 100.";
+      reading.measures = ["Сложить доли так, чтобы вместе они были равны всему урожаю."];
+      return reading;
+    }
+    if (balance.exportBan && balance.farmerKeptExtra == null) {
+      reading.stage = "blocked";
+      reading.conclusion = "Запрет экспорта оставил " + round(balance.blocked, 1) + " урожая в стране. Кто это удержит до межсезонья, не названо, поэтому нельзя сказать, поможет это фермеру или посреднику.";
+      reading.measures = [
+        "Назвать, какую долю запрещённого экспорта фермер способен оставить у себя. Пустое поле — не ноль и не сто.",
+        "Пока это не названо, запрет экспорта не считается мерой в пользу фермера."
+      ];
+      return reading;
+    }
+    var both = balance.importBan && balance.exportBan;
+    var importOnly = balance.importBan && !balance.exportBan;
+    var exportOnly = balance.exportBan && !balance.importBan;
+    if (both && balance.farmerKeptExtra === 0) {
+      reading.stage = "both";
+      reading.conclusion = "Оба запрета включены, а фермер не забирает запрещённый экспорт себе. Посредник докупает " + round(balance.intermediaryExtra, 1) + ", импорта в межсезонье нет. Еды тогда " + round(balance.leanSupply, 1) + ".";
+      reading.measures = [
+        "Снять запрет импорта до периода дефицита: он защищает уже собранный склад, а не население.",
+        "Запрет экспорта в урожай не поднимает доход фермера, если его собственный склад не вырос."
+      ];
+      return reading;
+    }
+    if (both) {
+      reading.stage = "both";
+      reading.conclusion = "Оба запрета включены. Фермер удерживает ещё " + round(balance.farmerKeptExtra, 1) + " урожая, посредник держит " + round(balance.intermediaryHeld, 1) + ". Импорта нет, еды " + round(balance.leanSupply, 1) + ".";
+      reading.measures = ["Импорт в дефицит возвращает еду населению. Долю фермера держит его склад, не запрет ввоза."];
+      return reading;
+    }
+    if (importOnly) {
+      reading.stage = "import";
+      reading.conclusion = "Запрет импорта убирает " + round(balance.importOpen, 1) + " из межсезонья. На столе остаётся " + round(balance.leanSupply, 1) + ". Запас посредника продаётся без ввоза.";
+      reading.measures = ["Запрет импорта уместен в короткие недели урожая, если ввоз обваливает цену фермера. На полгода дефицита он делает еду дороже."];
+      return reading;
+    }
+    if (exportOnly && balance.farmerKeptExtra === 0) {
+      reading.stage = "export";
+      reading.conclusion = "Запрет экспорта оставил " + round(balance.blocked, 1) + " в стране, и всё это докупает посредник. Осенний рынок " + round(balance.harvestMarket, 1) + ": товара больше, цена урожая ниже.";
+      reading.measures = ["Запрет экспорта в урожай давит цену, по которой фермер продаёт сейчас. Он уместен, если своей еды не хватает на стол, а не чтобы повысить доход фермера."];
+      return reading;
+    }
+    if (exportOnly) {
+      reading.stage = "export";
+      reading.conclusion = "Запрет экспорта оставил " + round(balance.blocked, 1) + " в стране. Фермер удерживает " + round(balance.farmerKeptExtra, 1) + ", посредник докупает " + round(balance.intermediaryExtra, 1) + ".";
+      reading.measures = ["Доход фермера растёт только на ту долю, которую он сам додержал до межсезонья."];
+      return reading;
+    }
+    reading.stage = "open";
+    reading.conclusion = "Граница открыта. Фермер продаёт сейчас всё, кроме своего склада " + round(balance.farmerHeld, 1) + ". В межсезонье еды " + round(balance.leanSupply, 1) + ": запас после потерь плюс импорт " + round(balance.imports, 1) + ".";
+    reading.measures = ["Склад и кредит фермеру, чтобы большая доля урожая дождалась дефицита у него, а не у посредника. Сезонный разрыв цен сам по себе ещё не ошибка: в нём хранение, порча и риск."];
+    return reading;
+  }
+
   function workedApparel() {
     var input = ILLUSTRATION.apparel;
     return {
@@ -969,6 +1116,9 @@
     sectorReading: sectorReading,
     ILLUSTRATION: ILLUSTRATION,
     workedPharma: workedPharma,
-    workedApparel: workedApparel
+    workedApparel: workedApparel,
+    SEASON_ILLUSTRATION: SEASON_ILLUSTRATION,
+    seasonBalance: seasonBalance,
+    seasonReading: seasonReading
   };
 });
